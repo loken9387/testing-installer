@@ -3,8 +3,6 @@
 # sudo apt-get update -y # Updates apt package index
 sudo apt-get upgrade -y
 
-#!/bin/bash
-
 # Path to the directory containing this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 THUMB_DRIVE_PATH="$SCRIPT_DIR/offlineInstall"
