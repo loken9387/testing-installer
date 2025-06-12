@@ -4,12 +4,15 @@ import subprocess
 import shutil
 
 packages = []
-with open('../trexinstaller/packages.csv', 'r') as file:
+packages_file = "packages.csv"
+with open(packages_file, "r", newline="") as file:
     csv_reader = csv.reader(file)
     for row in csv_reader:
-        packages.append(row)
+        if not row:
+            continue
+        packages.append(row[0].strip())
 
-download_dir = "~/git/trexinstaller/offline/debFiles/"
+download_dir = os.path.expanduser("~/git/trexinstaller/offline/debFiles/")
 
 os.makedirs(download_dir, exist_ok=True)
 
@@ -21,4 +24,4 @@ for package in packages:
         
 # Create a compressed archive of the downloaded packages
 archive_name = "packages.tar.gz"
-subprocess.run(f"tar -czvf {archive_name} -C {download-dir} .", shell=True, check=True)
+subprocess.run(f"tar -czvf {archive_name} -C {download_dir} .", shell=True, check=True)
