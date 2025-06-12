@@ -228,6 +228,7 @@ class InstallerGUI(QWidget):
         ["Making pullinglaunch.sh executable", "chmod", ["+x", "pullinglaunch.sh"]],
         ["Making hosts.sh executable", "chmod", ["+x", "hosts.sh"]],
         ["Running hosts.sh", "sudo", ["./hosts.sh"]],
+        ["Ensure xmmgr user exists", "bash", ["-c", "id -u xmmgr || sudo useradd -m xmmgr && echo 'xmmgr:xmmgr' | sudo chpasswd"]],
         ["Adding docker group", "sudo", ["groupadd", "docker"]],
         ["Forcing adding docker group if it doesn't exist", "sudo", ["groupadd", "-f", "docker"]],
         ["Adding user xmmgr to docker group", "sudo", ["usermod", "-aG", "docker", "xmmgr"]],
