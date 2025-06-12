@@ -4,7 +4,7 @@
 a = Analysis(
     ['install_gui.py'],
     pathex=[],
-    binaries=[],
+    binaries=[('/usr/lib/x86_64-linux-gnu/libpython3.10.so', '.')],
     datas=[],
     hiddenimports=[],
     hookspath=[],
@@ -29,7 +29,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

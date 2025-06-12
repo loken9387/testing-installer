@@ -227,12 +227,9 @@ class InstallerGUI(QWidget):
         ["Installing minicom to look at hoover stack", "sudo", ["apt", "install", "minicom", "-y"]],
         ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
         ["Allowing connections from any host", "xhost", ["+"]],
-
         ["Loading USRP FPGA", "uhd_image_loader", ["--args=type=x300,addr=192.168.40.2", "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"]],
         ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
         ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Making hosts.sh executable", "chmod", ["+x", "hosts.sh"]],
-        ["Running hosts.sh", "sudo", ["./hosts.sh"]],
         ["Ensure xmmgr user exists", "bash", ["-c", "id -u xmmgr || sudo useradd -m xmmgr && echo 'xmmgr:xmmgr' | sudo chpasswd"]],
         ["Adding docker group", "sudo", ["groupadd", "docker"]],
         ["Forcing adding docker group if it doesn't exist", "sudo", ["groupadd", "-f", "docker"]],
@@ -248,8 +245,8 @@ class InstallerGUI(QWidget):
         ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
         ["Changing owner of git directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git"]],
         ["Removing existing launch directory", "sudo", ["rm", "-r", "/home/xmmgr/git/launch"]],
-        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar"), "-C", "/home/xmmgr/git/"]],
         ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
+        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar.gz"), "-C", "/home/xmmgr/git/"]],
         ["Moving launch to git directory", "sudo", ["mv", "launch", "/home/xmmgr/git/"]],
         ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
         ["Creating dc_calibration directory", "mkdir", ["/home/xmmgr/recordings/dc_calibration"]],
@@ -261,9 +258,6 @@ class InstallerGUI(QWidget):
         ["Changing owner of dc_calibration directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
         ["Copying dc_calibration.sh to recordings", "sudo", ["cp", os.path.join(SCRIPT_DIR, "dc_calibration.sh"), "/home/xmmgr/recordings/dc_calibration/"]],
         ["changing priveleges of dc_calibration.sh", "sudo", ["chmod", "755", "/home/xmmgr/recordings/dc_calibration/dc_calibration.sh"]],
-
-        ["Creating Missions", "mkdir", ["/home/xmmgr/missions"]],
-        ["Adding read permission for webserver", "sudo", ["chmod", "664", "/home/xmmgr/git/launch/config/webserver/application.properties"]],
         ["creating postgres image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "postgres.tar.gz")]],
         ["creating node-webserver image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "node-webserver.tar.gz")]],
         ["creating services image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "services.tar.gz")]],
@@ -751,7 +745,7 @@ class InstallerGUI(QWidget):
     
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    qt_material.apply_stylesheet(app, theme='dark_teal.xml')
+    qt_material.apply_stylesheet(app, theme='dark_blue.xml')
     window = MainWindow()
     window.show()
     app.exec()
