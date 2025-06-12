@@ -3,6 +3,7 @@ import os
 import subprocess
 
 from PyQt6.QtCore import Qt, QProcess
+import qt_material
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -739,6 +740,7 @@ class InstallerGUI(QWidget):
     
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    qt_material.apply_stylesheet(app, theme='dark_teal.xml')
     window = MainWindow()
     window.show()
     app.exec()
