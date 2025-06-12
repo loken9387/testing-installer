@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QTextBrowser,
     QCheckBox,
     QRadioButton,
+    QFileDialog,
 )
 from PyQt6.QtGui import QGuiApplication
 
@@ -369,6 +370,8 @@ class InstallerGUI(QWidget):
     def __init__(self):
         super().__init__()
         print("Init")
+        self.launch_parent_dir = os.path.join(os.path.expanduser("~"), "git")
+        self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
         self.initUI()
 
     def initUI(self):
@@ -502,7 +505,19 @@ class InstallerGUI(QWidget):
         #     self.request_sudo()
             # command[2][0] = "\"" + self.sudo_password +"\""
             # print("command[2]: ", command[2])
-        if "clone" in command[2]:
+        if command[0] == "Creating git directory":
+            self.request_launch_location()
+            command[2][0] = self.launch_parent_dir
+            self.update_launch_paths()
+        elif command[0] == "Removing existing launch directory":
+            self.request_launch_location()
+            command[2][2] = self.launch_dir
+            self.update_launch_paths()
+        elif command[0] == "moving launch directory":
+            command[2][3] = self.launch_parent_dir + "/"
+        elif command[0] == "Moving launch to git directory":
+            command[2][2] = self.launch_parent_dir + "/"
+        elif "clone" in command[2]:
             self.updateMessage("Enter Bitbucket Credentials")
             self.request_bitbucket()
             command[2][1] = command[2][1].replace("username", self.bitbucket_username)
@@ -616,6 +631,18 @@ class InstallerGUI(QWidget):
             self.ovpn_profile = "profile-" + self.ovpn_number + ".ovpn"
             print("updating ovpn profile: ", self.ovpn_profile)
         self.center_layout.removeWidget(self.ovpnDialog)
+
+    def request_launch_location(self):
+        default_dir = self.launch_parent_dir
+        selected_dir = QFileDialog.getExistingDirectory(
+            self,
+            "Select Launch Directory Location",
+            default_dir,
+        )
+        if selected_dir:
+            self.launch_parent_dir = selected_dir
+        self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
+        print("launch directory set to", self.launch_dir)
     
     def request_network_config(self):
         print('requesting network configuration')
@@ -626,7 +653,23 @@ class InstallerGUI(QWidget):
     def set_bitbucket(self, username, password):
         self.bitbucket_username = username.replace("@", "%40")
         self.bitbucket_password = password.replace("@", "%40")
-        # self.branch_name = 
+        # self.branch_name =
+
+    def update_launch_paths(self):
+        for cmd in self.install_commands:
+            updated_args = []
+            for arg in cmd[2]:
+                if "/home/xmmgr/git/trexinstaller" in arg:
+                    updated_args.append(arg)
+                    continue
+                if arg.startswith("/home/xmmgr/git/launch"):
+                    arg = arg.replace("/home/xmmgr/git/launch", self.launch_dir)
+                elif arg.startswith("/home/xmmgr/git/"):
+                    arg = arg.replace("/home/xmmgr/git", self.launch_parent_dir)
+                elif arg == "/home/xmmgr/git":
+                    arg = self.launch_parent_dir
+                updated_args.append(arg)
+            cmd[2] = updated_args
 
     def read_output(self):
         output = self.process.readAllStandardOutput().data().decode()
