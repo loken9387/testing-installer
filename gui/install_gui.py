@@ -233,7 +233,7 @@ class InstallerGUI(QWidget):
         ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
         ["Making hosts.sh executable", "chmod", ["+x", "hosts.sh"]],
         ["Running hosts.sh", "sudo", ["./hosts.sh"]],
-        ["Ensure xmmgr user exists", "bash", ["-c", "id -u xmmgr || sudo useradd -m xmmgr && echo 'xmmgr:xmmgr' | sudo chpasswd"]],
+        ["Ensure xmmgr user exists", "bash", ["-c", "id -u xmmgr || sudo -S useradd -m xmmgr && echo 'xmmgr:xmmgr' | sudo -S chpasswd"]],
         ["Adding docker group", "sudo", ["groupadd", "docker"]],
         ["Forcing adding docker group if it doesn't exist", "sudo", ["groupadd", "-f", "docker"]],
         ["Adding user xmmgr to docker group", "sudo", ["usermod", "-aG", "docker", "xmmgr"]],
@@ -355,8 +355,14 @@ class InstallerGUI(QWidget):
         ["Copying OpenVPN files", "cp", [os.path.join(SCRIPT_DIR, "OpenVPN/"), "/home/xmmgr/", "-r"]],
         ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
         ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
-        ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-    ] 
+        ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]],
+    ]
+
+    # Ensure all sudo commands use the -S flag for password input
+    for cmd_list in (offline_commands, online_commands):
+        for cmd in cmd_list:
+            if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
+                cmd[2].insert(0, "-S")
 
     # branch_name = 'release/v2.4.1-baseline'
     def __init__(self):
@@ -507,12 +513,15 @@ class InstallerGUI(QWidget):
             self.update_launch_paths()
         elif command[0] == "Removing existing launch directory":
             self.request_launch_location()
-            command[2][2] = self.launch_dir
+            # account for sudo -S at the beginning of the arguments
+            index = 3 if command[1] == "sudo" else 2
+            command[2][index] = self.launch_dir
             self.update_launch_paths()
         elif command[0] == "moving launch directory":
             command[2][3] = self.launch_parent_dir + "/"
         elif command[0] == "Moving launch to git directory":
-            command[2][2] = self.launch_parent_dir + "/"
+            index = 3 if command[1] == "sudo" else 2
+            command[2][index] = self.launch_parent_dir + "/"
         elif "clone" in command[2]:
             self.updateMessage("Enter Bitbucket Credentials")
             self.request_bitbucket()
@@ -520,12 +529,17 @@ class InstallerGUI(QWidget):
             command[2][1] = command[2][1].replace("password", self.bitbucket_password)
             command[2][3] = command[2][3].replace("branch_name", self.branch_name)
             print("command[1]", command[1])
-        elif "docker" in command[2][0] and "login" in command[2][1]:
+        elif "docker" in command[2] and "login" in command[2]:
             self.updateMessage("Enter Docker Credentials")
             self.request_docker()
             print("need to update docker credentials")
-            command[2][4] = self.docker_username
-            command[2][6] = self.docker_password
+            try:
+                user_index = command[2].index("-u") + 1
+                pass_index = command[2].index("-p") + 1
+                command[2][user_index] = self.docker_username
+                command[2][pass_index] = self.docker_password
+            except ValueError:
+                pass
         elif "Setting up ovpn profile" == command[0]:
             self.updateMessage("Enter OpenVPN profile number")
             self.request_ovpn()
