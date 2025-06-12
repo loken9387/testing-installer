@@ -3,7 +3,10 @@ import os
 import subprocess
 import getpass
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, "frozen", False):
+    SCRIPT_DIR = os.path.dirname(sys.executable)
+else:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from PyQt6.QtCore import Qt, QProcess
 import qt_material
