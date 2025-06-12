@@ -30,8 +30,7 @@
 ->>>>>>change /etc/sudoers file with: `username ALL=(ALL) NOPASSWD: command_path`
 ->>>>>>trex_environment.sh needs to be changed from rc5 to rc6 and from docker-dev to docker-trex
 
-### Offline package directory
-The offline installers now look for required `.deb` files in a folder located
-next to the installer script. Place your packages inside a directory named
-`dependencies` when using `install_gui.py` or `offlineInstall` when running
-`offline_install.py` or `offline_install.sh`.
+### Preparing Offline Packages
+Run `offline/gather_debs.py` to download all packages listed in `packages.csv`.
+The script places the `.deb` files in `offline/debFiles`. Use the optional
+`--tar` flag to create `offline/debFiles.tar.gz` with the downloaded packages.
