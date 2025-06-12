@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Install TReX
+Comment=Run my Python script
+Exec=/home/xmmgr/git/trexinstaller/gui/dist/install_gui
+#Icon=/home/username/icons/python-icon.png
+Terminal=True
