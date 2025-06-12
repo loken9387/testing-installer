@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+import getpass
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -200,6 +201,7 @@ class InputDialog(QDialog):
 
 class InstallerGUI(QWidget):
     progress = 0
+    sudo_username = getpass.getuser()
     sudo_password = ''
     root_password = 'root'
     bitbucket_username = ''
@@ -584,8 +586,10 @@ class InstallerGUI(QWidget):
         self.sudoDialog.input2.setFocus()
         if self.sudoDialog.exec() == QDialog.DialogCode.Accepted:
             self.sudoDialog.setVisible(False)
-            nothing1, self.sudo_password, nothing2 = self.sudoDialog.get_inputs()
-            print("Sudo username: ", nothing1, ", sudo password: ", self.sudo_password, ", branch: ", nothing2)
+            self.sudo_username, self.sudo_password, nothing2 = self.sudoDialog.get_inputs()
+            if not self.sudo_username:
+                self.sudo_username = getpass.getuser()
+            print("Sudo username: ", self.sudo_username, ", sudo password: ", self.sudo_password, ", branch: ", nothing2)
         self.center_layout.removeWidget(self.sudoDialog)
 
     def request_docker(self):
@@ -693,7 +697,7 @@ class InstallerGUI(QWidget):
                 self.logsText.append("Saying yes to overwrite")
                 # Send 'y' (yes) followed by a newline to confirm overwriting
                 self.process.write(b"y\n")
-            if "password for xmmgr" in output:
+            if "password for" in output:
                 self.process.write(f"{self.sudo_password}\n".encode())
                 self.logsText.append("self.sudo_password: "+self.sudo_password)
             if "New password:" in output or "Retype new password:" in output:
@@ -729,8 +733,8 @@ class InstallerGUI(QWidget):
                 self.logsText.append("Saying yest to overwrite")
                 # Send 'y' (yes) followed by a newline to confirm overwriting
                 self.process.write(b"y\n")
-            if "password for xmmgr" in error:
-                self.process.write(f"{self.sudo_password}\n".encode()) 
+            if "password for" in error:
+                self.process.write(f"{self.sudo_password}\n".encode())
                 self.logsText.append("self.sudo_password: "+self.sudo_password)
 
     def process_finished(self, exit_code, exit_status):
