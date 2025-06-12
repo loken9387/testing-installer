@@ -29,3 +29,8 @@
 -give user xmmgr access to commands normally restricted to sudo:
 ->>>>>>change /etc/sudoers file with: `username ALL=(ALL) NOPASSWD: command_path`
 ->>>>>>trex_environment.sh needs to be changed from rc5 to rc6 and from docker-dev to docker-trex
+
+### Preparing Offline Packages
+Run `offline/gather_debs.py` to download all packages listed in `packages.csv`.
+The script places the `.deb` files in `offline/debFiles`. Use the optional
+`--tar` flag to create `offline/debFiles.tar.gz` with the downloaded packages.
