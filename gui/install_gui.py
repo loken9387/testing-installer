@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QRadioButton,
     QFileDialog,
+    QMessageBox,
 )
 from PyQt6.QtGui import QGuiApplication
 
@@ -214,6 +215,7 @@ class InstallerGUI(QWidget):
     ovpn_number = 0
     install_method = ""
     install_commands = []
+    resource_dir = SCRIPT_DIR
 
     # offline install commands
     offline_commands = [
@@ -362,6 +364,7 @@ class InstallerGUI(QWidget):
     def __init__(self):
         super().__init__()
         print("Init")
+        self.resource_dir = SCRIPT_DIR
         self.launch_parent_dir = os.path.join(os.path.expanduser("~"), "git")
         self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
         self.initUI()
@@ -420,7 +423,7 @@ class InstallerGUI(QWidget):
         self.setLayout(self.layout)
     
     def offlineSetup(self):
-        script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_dir = self.resource_dir
         thumb_drive_path = os.path.join(script_dir, "dependencies")
         self.update_resource_paths(script_dir)
         print("offlineSetup() function")
@@ -469,6 +472,8 @@ class InstallerGUI(QWidget):
         self.progressBar.setVisible(True)
 
         script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_dir = self.verify_resource_directory(script_dir)
+        self.resource_dir = script_dir
         self.update_resource_paths(script_dir)
 
         self.process = QProcess(self)
@@ -672,16 +677,46 @@ class InstallerGUI(QWidget):
     def update_resource_paths(self, script_dir):
         replacements = {
             "/home/xmmgr/Downloads/launch.tar": os.path.join(script_dir, "launch.tar"),
+            os.path.join(SCRIPT_DIR, "launch.tar"): os.path.join(script_dir, "launch.tar"),
             "/home/xmmgr/Downloads/postgres.tar.gz": os.path.join(script_dir, "postgres.tar.gz"),
+            os.path.join(SCRIPT_DIR, "postgres.tar.gz"): os.path.join(script_dir, "postgres.tar.gz"),
             "/home/xmmgr/Downloads/node-webserver.tar.gz": os.path.join(script_dir, "node-webserver.tar.gz"),
+            os.path.join(SCRIPT_DIR, "node-webserver.tar.gz"): os.path.join(script_dir, "node-webserver.tar.gz"),
             "/home/xmmgr/Downloads/services.tar.gz": os.path.join(script_dir, "services.tar.gz"),
+            os.path.join(SCRIPT_DIR, "services.tar.gz"): os.path.join(script_dir, "services.tar.gz"),
             "/home/xmmgr/Downloads/signal.tar.gz": os.path.join(script_dir, "signal.tar.gz"),
+            os.path.join(SCRIPT_DIR, "signal.tar.gz"): os.path.join(script_dir, "signal.tar.gz"),
             "/home/xmmgr/Downloads/createDesktop.sh": os.path.join(script_dir, "createDesktop.sh"),
+            os.path.join(SCRIPT_DIR, "createDesktop.sh"): os.path.join(script_dir, "createDesktop.sh"),
             "/home/xmmgr/Downloads/OpenVPN/": os.path.join(script_dir, "OpenVPN/"),
+            os.path.join(SCRIPT_DIR, "OpenVPN/"): os.path.join(script_dir, "OpenVPN/"),
         }
         for cmd_list in (self.offline_commands, self.online_commands):
             for cmd in cmd_list:
                 cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
+
+    def verify_resource_directory(self, script_dir):
+        required_files = [
+            "launch.tar",
+            "postgres.tar.gz",
+            "node-webserver.tar.gz",
+            "services.tar.gz",
+            "signal.tar.gz",
+        ]
+        missing = [f for f in required_files if not os.path.exists(os.path.join(script_dir, f))]
+        if missing:
+            msg = f"Resources missing in:\n{script_dir}\n" + "\n".join(missing)
+            box = QMessageBox(self)
+            box.setWindowTitle("Missing Resources")
+            box.setText(msg + "\nUse this directory?")
+            use_btn = box.addButton("Use This Directory", QMessageBox.YesRole)
+            browse_btn = box.addButton("Browse", QMessageBox.NoRole)
+            box.exec()
+            if box.clickedButton() == browse_btn:
+                selected_dir = QFileDialog.getExistingDirectory(self, "Select Resource Directory", script_dir)
+                if selected_dir:
+                    script_dir = selected_dir
+        return script_dir
 
     def read_output(self):
         output = self.process.readAllStandardOutput().data().decode()
