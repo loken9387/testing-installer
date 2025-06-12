@@ -472,7 +472,8 @@ class InstallerGUI(QWidget):
         self.setLayout(self.layout)
     
     def offlineSetup(self):
-        thumb_drive_path = "/home/xmmgr/Downloads/dependencies/"
+        script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        thumb_drive_path = os.path.join(script_dir, "dependencies")
         print("offlineSetup() function")
 
         # Ensure the thumb drive path exists
