@@ -5,8 +5,9 @@ sudo apt-get upgrade -y
 
 #!/bin/bash
 
-# Path to the thumb drive (replace with the actual path where your thumb drive is mounted)
-THUMB_DRIVE_PATH="/home/xmmgr/Documents/installWizard/offlineInstall/"
+# Path to the directory containing this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+THUMB_DRIVE_PATH="$SCRIPT_DIR/offlineInstall"
 
 # Check if the thumb drive path exists
 if [ ! -d "$THUMB_DRIVE_PATH" ]; then
