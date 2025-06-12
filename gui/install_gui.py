@@ -223,9 +223,9 @@ class InstallerGUI(QWidget):
         ["Installing minicom to look at hoover stack", "sudo", ["apt", "install", "minicom", "-y"]],
         ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
         ["Allowing connections from any host", "xhost", ["+"]],
-        ["Making usrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/usrp.sh"]],
-        ["Making resizeusrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/resizeusrp.sh"]],
-        ["Making pullinglaunch.sh executable", "chmod", ["+x", "pullinglaunch.sh"]],
+        ["Loading USRP FPGA", "uhd_image_loader", ["--args=type=x300,addr=192.168.40.2", "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"]],
+        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
+        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
         ["Making hosts.sh executable", "chmod", ["+x", "hosts.sh"]],
         ["Running hosts.sh", "sudo", ["./hosts.sh"]],
         ["Ensure xmmgr user exists", "bash", ["-c", "id -u xmmgr || sudo useradd -m xmmgr && echo 'xmmgr:xmmgr' | sudo chpasswd"]],
@@ -237,9 +237,6 @@ class InstallerGUI(QWidget):
         ["Restarting docker", "sudo", ["systemctl", "restart", "docker"]],
         ["Enabling docker", "sudo", ["systemctl", "enable", "docker"]],
         ["Checking docker status", "sudo", ["systemctl", "status", "docker"]],
-        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
-        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Making usrp.sh executable in recordings", "sudo", ["chmod", "+x", "/home/xmmgr/recordings/usrp.sh"]],
         ["Running hosts.sh again", "sudo", ["./hosts.sh"]],
         ["Creating git directory", "mkdir", ["/home/xmmgr/git"]],
         ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
@@ -255,30 +252,20 @@ class InstallerGUI(QWidget):
         ["Changing owner of recordings directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings"]],
         ["Changing group of dc_calibration directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
         ["Changing owner of dc_calibration directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
-        ["Copying dc_calibration.sh to recordings", "sudo", ["cp", "/home/xmmgr/Downloads/dc_calibration.sh", "/home/xmmgr/recordings/dc_calibration/"]],
-        ["changing priveleges of dc_calibration.sh", "sudo", ["chmod", "755", "/home/xmmgr/recordings/dc_calibration/dc_calibration.sh"]],
         ["Running hosts.sh again", "sudo", ["./hosts.sh"]],
         ["Creating Missions", "mkdir", ["/home/xmmgr/missions"]],
-        ["Importing missions json", "sudo", ["cp", "/home/xmmgr/Downloads/mainMission.json", "/home/xmmgr/missions/"]],
-        ["Copying monitors.xml to config", "sudo", ["cp", "/home/xmmgr/Downloads/monitors.xml", "/home/xmmgr/.config/"]],
-        ["Copying monitors.xml to gdm3 config", "sudo", ["cp", "-i", "/home/xmmgr/.config/monitors.xml", "/var/lib/gdm3/.config/"]],
         ["Adding read permission for webserver", "sudo", ["chmod", "664", "/home/xmmgr/git/launch/config/webserver/application.properties"]],
         ["creating postgres image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/postgres.tar.gz"]],
         ["creating node-webserver image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/node-webserver.tar.gz"]], 
         ["creating services image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/services.tar.gz"]], 
         ["creating signal image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/signal.tar.gz"]], 
         # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]], 
-        ["Importing missions file", "sudo", ["curl", "-X", "POST", base_url, "-d", "/home/xmmgr/missions/mainMission.json"]], 
         ["changing to bash mode", "sed", ["-i" , "s/xmidas_node/bash/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
         ["Creating Desktop icon", "sudo", ["/home/xmmgr/Downloads/createDesktop.sh"]],
         ["Copying OpenVPN files", "cp", ["/home/xmmgr/Downloads/OpenVPN/", "/home/xmmgr/", "-r"]],
         ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
-        ["Setting up ovpn profile", "sudo",["/home/xmmgr/OpenVPN/VPNinstaller.sh", "-p", "", "-d", "/home/xmmgr/OpenVPN"]],
         ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
         ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
     ]
 
     # online install commands
@@ -311,9 +298,9 @@ class InstallerGUI(QWidget):
         ["Installing sensors for cpu testing", "sudo", ["apt", "install", "lm-sensors", "-y"]],
         ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
         ["Allowing connections from any host", "xhost", ["+"]],
-        ["Making usrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/usrp.sh"]],
-        ["Making resizeusrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/resizeusrp.sh"]],
-        ["Making pullinglaunch.sh executable", "chmod", ["+x", "pullinglaunch.sh"]],
+        ["Loading USRP FPGA", "uhd_image_loader", ["--args=type=x300,addr=192.168.40.2", "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"]],
+        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
+        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
         ["Making hosts.sh executable", "chmod", ["+x", "hosts.sh"]],
         ["Running hosts.sh", "sudo", ["./hosts.sh"]],
         ["Adding docker group", "sudo", ["groupadd", "docker"]],
@@ -324,9 +311,6 @@ class InstallerGUI(QWidget):
         ["Restarting docker", "sudo", ["systemctl", "restart", "docker"]],
         ["Enabling docker", "sudo", ["systemctl", "enable", "docker"]],
         ["Checking docker status", "sudo", ["systemctl", "status", "docker"]],
-        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
-        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Making usrp.sh executable in recordings", "sudo", ["chmod", "+x", "/home/xmmgr/recordings/usrp.sh"]],
         ["Running hosts.sh again", "sudo", ["./hosts.sh"]],
         ["Creating git directory", "mkdir", ["/home/xmmgr/git"]],
         ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
@@ -342,30 +326,20 @@ class InstallerGUI(QWidget):
         ["Changing owner of recordings directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings"]],
         ["Changing group of dc_calibration directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
         ["Changing owner of dc_calibration directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
-        ["Copying dc_calibration.sh to recordings", "sudo", ["cp", "/home/xmmgr/Downloads/dc_calibration.sh", "/home/xmmgr/recordings/dc_calibration/"]],
-        ["changing priveleges of dc_calibration.sh", "sudo", ["chmod", "755", "/home/xmmgr/recordings/dc_calibration/dc_calibration.sh"]],
         ["Running hosts.sh again", "sudo", ["./hosts.sh"]],
         ["Creating Missions", "mkdir", ["/home/xmmgr/missions"]],
-        ["Importing missions json", "sudo", ["cp", "/home/xmmgr/Downloads/mainMission.json", "/home/xmmgr/missions/"]],
-        ["Copying monitors.xml to config", "sudo", ["cp", "/home/xmmgr/Downloads/monitors.xml", "/home/xmmgr/.config/"]],
-        ["Copying monitors.xml to gdm3 config", "sudo", ["cp", "-i", "/home/xmmgr/.config/monitors.xml", "/var/lib/gdm3/.config/"]],
         ["Adding read permission for webserver", "sudo", ["chmod", "664", "/home/xmmgr/git/launch/config/webserver/application.properties"]],
         ["creating postgres image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/postgres.tar.gz"]],
         ["creating node-webserver image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/node-webserver.tar.gz"]], 
         ["creating services image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/services.tar.gz"]], 
         ["creating signal image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/signal.tar.gz"]], 
         # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]], 
-        ["Importing missions file", "sudo", ["curl", "-X", "POST", base_url, "-d", "/home/xmmgr/missions/mainMission.json"]], 
         ["changing to bash mode", "sed", ["-i" , "s/xmidas_node/bash/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
         ["Creating Desktop icon", "sudo", ["/home/xmmgr/Downloads/createDesktop.sh"]],
         ["Copying OpenVPN files", "cp", ["/home/xmmgr/Downloads/OpenVPN/", "/home/xmmgr/", "-r"]],
         ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
-        ["Setting up ovpn profile", "sudo",["/home/xmmgr/OpenVPN/VPNinstaller.sh", "-p", "", "-d", "/home/xmmgr/OpenVPN"]],
         ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
         ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
     ] 
 
     # branch_name = 'release/v2.4.1-baseline'
@@ -432,6 +406,7 @@ class InstallerGUI(QWidget):
     def offlineSetup(self):
         script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
         thumb_drive_path = os.path.join(script_dir, "dependencies")
+        self.update_resource_paths(script_dir)
         print("offlineSetup() function")
 
         # Ensure the thumb drive path exists
@@ -476,6 +451,9 @@ class InstallerGUI(QWidget):
         self.startButton.setEnabled(False)
         self.startButton.setVisible(False)
         self.progressBar.setVisible(True)
+
+        script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.update_resource_paths(script_dir)
 
         self.process = QProcess(self)
         self.process.readyReadStandardOutput.connect(self.read_output)
@@ -672,6 +650,20 @@ class InstallerGUI(QWidget):
                     arg = self.launch_parent_dir
                 updated_args.append(arg)
             cmd[2] = updated_args
+
+    def update_resource_paths(self, script_dir):
+        replacements = {
+            "/home/xmmgr/Downloads/launch.tar": os.path.join(script_dir, "launch.tar"),
+            "/home/xmmgr/Downloads/postgres.tar.gz": os.path.join(script_dir, "postgres.tar.gz"),
+            "/home/xmmgr/Downloads/node-webserver.tar.gz": os.path.join(script_dir, "node-webserver.tar.gz"),
+            "/home/xmmgr/Downloads/services.tar.gz": os.path.join(script_dir, "services.tar.gz"),
+            "/home/xmmgr/Downloads/signal.tar.gz": os.path.join(script_dir, "signal.tar.gz"),
+            "/home/xmmgr/Downloads/createDesktop.sh": os.path.join(script_dir, "createDesktop.sh"),
+            "/home/xmmgr/Downloads/OpenVPN/": os.path.join(script_dir, "OpenVPN/"),
+        }
+        for cmd_list in (self.offline_commands, self.online_commands):
+            for cmd in cmd_list:
+                cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
 
     def read_output(self):
         output = self.process.readAllStandardOutput().data().decode()
