@@ -8,3 +8,4 @@
 ["Installing dbus-xll", "sudo", ["dpkg", "-i", "dbus-x11_1.12.20-2ubuntu4.1_amd64.deb", "-y"]],
 ["Installing xrdp", "sudo", ["dpkg", "-i", "xrdp_0.9.17-2ubuntu2+esm1_amd64.deb", "-y"]],
 ["Installing minicom", "sudo", ["dpkg", "-i", "minicom_2.8-2_amd64.deb", "-y"]],
+["Ensure xmmgr group exists", "bash", ["-c", "getent group xmmgr || sudo groupadd xmmgr"]],
