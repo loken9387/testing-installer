@@ -3,8 +3,6 @@
 # sudo apt-get update -y # Updates apt package index
 sudo apt-get upgrade -y
 
-#!/bin/bash
-
 # Path to the thumb drive (replace with the actual path where your thumb drive is mounted)
 THUMB_DRIVE_PATH="/home/xmmgr/Documents/installWizard/offlineInstall/"
 
