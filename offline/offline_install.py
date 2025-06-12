@@ -61,8 +61,9 @@ class InstallThread(QThread):
     bitbucket_password = ''
     
     def run(self):
-        # Path to the thumb drive (replace with the actual path where your thumb drive is mounted)
-        thumb_drive_path = "/home/xmmgr/Documents/installWizard/offlineInstall/"
+        # Path to the directory containing the installer
+        script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        thumb_drive_path = os.path.join(script_dir, "offlineInstall")
 
         # Ensure the thumb drive path exists
         if not os.path.exists(thumb_drive_path):

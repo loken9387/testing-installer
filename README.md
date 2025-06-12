@@ -29,3 +29,9 @@
 -give user xmmgr access to commands normally restricted to sudo:
 ->>>>>>change /etc/sudoers file with: `username ALL=(ALL) NOPASSWD: command_path`
 ->>>>>>trex_environment.sh needs to be changed from rc5 to rc6 and from docker-dev to docker-trex
+
+### Offline package directory
+The offline installers now look for required `.deb` files in a folder located
+next to the installer script. Place your packages inside a directory named
+`dependencies` when using `install_gui.py` or `offlineInstall` when running
+`offline_install.py` or `offline_install.sh`.
