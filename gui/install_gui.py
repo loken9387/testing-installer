@@ -1,17 +1,25 @@
 import sys
-import time
 import os
-import csv
-
 import subprocess
-import tempfile
 
-import threading
-from PyQt6.QtCore import QSize, Qt, QThread, pyqtSignal, QProcess
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, \
-    QInputDialog, QLineEdit, QProgressBar, QVBoxLayout, QWidget, QDialog, \
-    QLabel, QHBoxLayout, QSizePolicy, QTextEdit, QTextBrowser, QCheckBox, QRadioButton
-from PyQt6.QtGui import QGuiApplication, QColor, QPalette
+from PyQt6.QtCore import Qt, QProcess
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QPushButton,
+    QLineEdit,
+    QProgressBar,
+    QVBoxLayout,
+    QWidget,
+    QDialog,
+    QLabel,
+    QHBoxLayout,
+    QSizePolicy,
+    QTextBrowser,
+    QCheckBox,
+    QRadioButton,
+)
+from PyQt6.QtGui import QGuiApplication
 
 # Subclass QMainWindow to customize your application's main window
 class MainWindow(QMainWindow):
@@ -203,49 +211,16 @@ class InstallerGUI(QWidget):
 
     # offline install commands
     offline_commands = [
-        # ["Logging into sudo", "echo xmmgr | sudo -S bash -c 'echo \"xmmgr ALL=(ALL) NOPASSWD:ALL\" | EDITOR=\"tee -a\" visudo'"],
-        # ["Logging into sudo", "echo" ,["\"yourpassword\"", "|", "sudo", "-S", "bash", "-c", "\'echo \"xmmgr ALL=(ALL) NOPASSWD:ALL\" | EDITOR=\"tee -a\" visudo\'"]],
-        # ["Logging into sudo", "sudo", ["su"]],
-        # ["Updating apt package index", "sudo", ["-S", "apt-get", "update", "-y"]],
-        # ["Upgrading packages", "sudo", ["apt-get", "upgrade", "-y"]],
-        # ["Installing openssh-server", "sudo", ["apt", "install", "openssh-server", "-y"]],
-        # ["Installing openssh-server", "sudo", ["dpkg", "-i", "openssh-server_1%3a8.9p1-3ubuntu0.13+Fips1_amd64.deb", "-y"]],
         ["Starting ssh", "sudo", ["systemctl", "start", "ssh"]],
         ["Enabling ssh now", "sudo", ["systemctl", "enable", "ssh", "--now"]],
         ["Enabling ssh", "sudo", ["systemctl", "enable", "ssh"]],
         ["Disabling firewall", "sudo", ["ufw", "disable"]],
         ["Allowing port 22 to be used", "sudo", ["ufw", "allow", "ssh"]],
-        # ["Installing vim", "sudo", ["apt", "install", "vim", "-y"]],
-        # ["Installing locate", "sudo", ["apt", "install", "mlocate", "-y"]],
-        # ["Installing find", "sudo", ["apt", "install", "find"]],
-        # ["Installing Tigervncserver", "sudo", ["apt", "install", "tigervnc-standalone-server", "-y"]],
-        # ["Installing Tigervncserver", "sudo", ["dpkg", "-i", "tigervnc-standalone-server_1.12.0+dfsg-4ubuntu0.22.04.1_amd64.deb", "-y"]],
-        # ["Installing Tigervncviewer", "sudo", ["apt", "install", "tigervnc-viewer", "-y"]],
-        # ["Installing Tigervncviewer", "sudo", ["dpkg", "-i", "tigervnc-viewer_1.12.0+dfsg-4ubuntu0.22.04.1_amd64.deb", "-y"]],
-        # ["Installing docker-compose", "sudo", ["apt", "install", "docker-compose", "-y"]],
-        # ["Installing docker-compose", "sudo", ["dpkg", "-i", "docker-compose_1.29.2-1_all.deb", "-y"]],
-        # ["Installing net-tools", "sudo", ["apt", "install", "net-tools", "-y"]],
-        # ["Installing net-tools", "sudo", ["dpkg", "-i", "net-tools_1.60+git20181103.0eebece-1ubuntu5.4_amd64.deb", "-y"]],
-        # ["Installing selinux-utils", "sudo", ["apt", "install", "selinux-utils", "-y"]],
-        # ["Installing selinux-utils", "sudo", ["dpkg", "-i", "selinux-utils_3.3-1build2_amd64.deb", "-y"]],
-        # ["Installing gcc", "sudo", ["apt", "install", "gcc", "-y"]],
-        # ["Installing gcc", "sudo", ["dpkg", "-i", "gcc_4%3a11.2.0-1ubuntu1_amd64.deb", "-y"]],
-        # ["Installing package needed to change gedit color scheme", "sudo", ["apt", "install", "dbus-x11", "-y"]],
-        # ["Installing dbus-xll", "sudo", ["dpkg", "-i", "dbus-x11_1.12.20-2ubuntu4.1_amd64.deb", "-y"]],
-        # ["Installing xrdp", "sudo", ["apt", "install", "xrdp", "-y"]],
-        # ["Installing xrdp", "sudo", ["dpkg", "-i", "xrdp_0.9.17-2ubuntu2+esm1_amd64.deb", "-y"]],
         ["Starting xrdp", "sudo", ["systemctl", "start", "xrdp"]],
         ["Enabling xrdp", "sudo", ["systemctl", "enable", "xrdp"]],
         ["Installing minicom to look at hoover stack", "sudo", ["apt", "install", "minicom", "-y"]],
-        # ["Installing minicom", "sudo", ["dpkg", "-i", "minicom_2.8-2_amd64.deb", "-y"]],
-        # ["Installing screen to look at gps", "sudo", ["apt", "install", "screen", "-y"]],
-        # ["Installing dos2unix for cpu testing to convert windows file to linux", "sudo", ["apt", "install", "dos2unix"]],
-        # ["Installing sensors for cpu testing", "sudo", ["apt", "install", "lm-sensors", "-y"]],
         ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
         ["Allowing connections from any host", "xhost", ["+"]],
-        # ["Installing docker", "sudo", ["apt", "install", "docker", "-y"]],
-        # ["Downloading chrome .deb file", "wget", ["https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"]],
-        # ["Installing google-chrome", "sudo", ["apt", "install", "./google-chrome-stable_current_amd64.deb", "-y"]],
         ["Making usrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/usrp.sh"]],
         ["Making resizeusrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/resizeusrp.sh"]],
         ["Making pullinglaunch.sh executable", "chmod", ["+x", "pullinglaunch.sh"]],
@@ -266,8 +241,6 @@ class InstallerGUI(QWidget):
         ["Creating git directory", "mkdir", ["/home/xmmgr/git"]],
         ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
         ["Changing owner of git directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git"]],
-        # ["Logging into Docker", "sudo", ["docker", "login","docker-trex.artifactory.parsons.us", "-u", "username", "-p", "password"]],
-        # ["Cloning launch repository", "git", ["clone", "https://username:password@bitbucket.parsons.us/scm/trex/launch.git", "--branch", "branch_name", "--progress"]],
         ["Removing existing launch directory", "sudo", ["rm", "-r", "/home/xmmgr/git/launch"]],
         ["moving launch directory", "tar", ["-xf", "/home/xmmgr/Downloads/launch.tar", "-C", "/home/xmmgr/git/"]],
         ["Moving launch to git directory", "sudo", ["mv", "launch", "/home/xmmgr/git/"]],
@@ -287,11 +260,8 @@ class InstallerGUI(QWidget):
         ["Copying monitors.xml to config", "sudo", ["cp", "/home/xmmgr/Downloads/monitors.xml", "/home/xmmgr/.config/"]],
         ["Copying monitors.xml to gdm3 config", "sudo", ["cp", "-i", "/home/xmmgr/.config/monitors.xml", "/var/lib/gdm3/.config/"]],
         ["Adding read permission for webserver", "sudo", ["chmod", "664", "/home/xmmgr/git/launch/config/webserver/application.properties"]],
-        # ["postgres", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/postgres-prod_v2.3.4.tar.gz"]],
         ["creating postgres image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/postgres.tar.gz"]],
-        # ["webserver", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/webserver-prod_v2.4.1-baseline-rc2.tar.gz"]], 
         ["creating node-webserver image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/node-webserver.tar.gz"]], 
-        # ["node", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/node-prod_v2.4.1-baseline-rc1.tar.gz"]], 
         ["creating services image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/services.tar.gz"]], 
         ["creating signal image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/signal.tar.gz"]], 
         # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
@@ -306,16 +276,10 @@ class InstallerGUI(QWidget):
         ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
         ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
         ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
-        # ["Removing user xmmgr from docker", "sudo", ["deluser", "xmmgr", "docker"]],
-        # ["adding root password", "sudo", ["passwd"]],
-        # ["Remove user from sudo", "sudo", ["deluser", "xmmgr", "sudo"]]
     ]
 
     # online install commands
     online_commands = [
-        # ["Logging into sudo", "echo xmmgr | sudo -S bash -c 'echo \"xmmgr ALL=(ALL) NOPASSWD:ALL\" | EDITOR=\"tee -a\" visudo'"],
-        # ["Logging into sudo", "echo" ,["\"yourpassword\"", "|", "sudo", "-S", "bash", "-c", "\'echo \"xmmgr ALL=(ALL) NOPASSWD:ALL\" | EDITOR=\"tee -a\" visudo\'"]],
-        # ["Logging into sudo", "sudo", ["su"]],
         ["Updating apt package index", "sudo", ["-S", "apt-get", "update", "-y"]],
         ["Upgrading packages", "sudo", ["apt-get", "upgrade", "-y"]],
         ["Installing openssh-server", "sudo", ["apt", "install", "openssh-server", "-y"]],
@@ -344,9 +308,6 @@ class InstallerGUI(QWidget):
         ["Installing sensors for cpu testing", "sudo", ["apt", "install", "lm-sensors", "-y"]],
         ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
         ["Allowing connections from any host", "xhost", ["+"]],
-        # ["Installing docker", "sudo", ["apt", "install", "docker", "-y"]],
-        # ["Downloading chrome .deb file", "wget", ["https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"]],
-        # ["Installing google-chrome", "sudo", ["apt", "install", "./google-chrome-stable_current_amd64.deb", "-y"]],
         ["Making usrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/usrp.sh"]],
         ["Making resizeusrp.sh executable", "chmod", ["+x", "/home/xmmgr/Downloads/resizeusrp.sh"]],
         ["Making pullinglaunch.sh executable", "chmod", ["+x", "pullinglaunch.sh"]],
@@ -367,8 +328,6 @@ class InstallerGUI(QWidget):
         ["Creating git directory", "mkdir", ["/home/xmmgr/git"]],
         ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
         ["Changing owner of git directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git"]],
-        # ["Logging into Docker", "sudo", ["docker", "login","docker-trex.artifactory.parsons.us", "-u", "username", "-p", "password"]],
-        # ["Cloning launch repository", "git", ["clone", "https://username:password@bitbucket.parsons.us/scm/trex/launch.git", "--branch", "branch_name", "--progress"]],
         ["Removing existing launch directory", "sudo", ["rm", "-r", "/home/xmmgr/git/launch"]],
         ["moving launch directory", "tar", ["-xf", "/home/xmmgr/Downloads/launch.tar", "-C", "/home/xmmgr/git/"]],
         ["Moving launch to git directory", "sudo", ["mv", "launch", "/home/xmmgr/git/"]],
@@ -388,11 +347,8 @@ class InstallerGUI(QWidget):
         ["Copying monitors.xml to config", "sudo", ["cp", "/home/xmmgr/Downloads/monitors.xml", "/home/xmmgr/.config/"]],
         ["Copying monitors.xml to gdm3 config", "sudo", ["cp", "-i", "/home/xmmgr/.config/monitors.xml", "/var/lib/gdm3/.config/"]],
         ["Adding read permission for webserver", "sudo", ["chmod", "664", "/home/xmmgr/git/launch/config/webserver/application.properties"]],
-        # ["postgres", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/postgres-prod_v2.3.4.tar.gz"]],
         ["creating postgres image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/postgres.tar.gz"]],
-        # ["webserver", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/webserver-prod_v2.4.1-baseline-rc2.tar.gz"]], 
         ["creating node-webserver image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/node-webserver.tar.gz"]], 
-        # ["node", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/node-prod_v2.4.1-baseline-rc1.tar.gz"]], 
         ["creating services image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/services.tar.gz"]], 
         ["creating signal image", "sudo", ["docker", "load", "-i", "/home/xmmgr/Downloads/signal.tar.gz"]], 
         # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
@@ -407,9 +363,6 @@ class InstallerGUI(QWidget):
         ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
         ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
         ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
-        # ["Removing user xmmgr from docker", "sudo", ["deluser", "xmmgr", "docker"]],
-        # ["adding root password", "sudo", ["passwd"]],
-        # ["Remove user from sudo", "sudo", ["deluser", "xmmgr", "sudo"]]   
     ] 
 
     # branch_name = 'release/v2.4.1-baseline'
@@ -583,9 +536,7 @@ class InstallerGUI(QWidget):
         self.label.setText(description)
         print("Executing command: ", command[1]+" "+" ".join(command[2]))
         self.updateMessage(command[0])
-        self.process.start(command[1],command[2])
-        self.updateMessage(command[0])
-        self.process.start(command[1],command[2])
+        self.process.start(command[1], command[2])
         self.progress += 1
         self.updateProgress(self.progress)
         print("End of startProcess")
