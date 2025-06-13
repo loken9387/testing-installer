@@ -256,7 +256,6 @@ class InstallerGUI(QWidget):
         # ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
     ]
 
-
     # Ensure all sudo commands use the -S flag for password input
     for cmd in offline_commands:
         if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
@@ -586,6 +585,7 @@ class InstallerGUI(QWidget):
             "/home/xmmgr/Downloads/OpenVPN/": os.path.join(script_dir, "OpenVPN/"),
             os.path.join(SCRIPT_DIR, "OpenVPN/"): os.path.join(script_dir, "OpenVPN/"),
         }
+
         for cmd in self.offline_commands:
             cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
 
