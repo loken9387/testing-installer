@@ -219,113 +219,111 @@ class InputDialog(QDialog):
         return self.input1.text(), self.input2.text(), self.inputBranch.text()
 
 class InstallerGUI(QWidget):
-    progress = 0
-    sudo_username = getpass.getuser()
-    sudo_password = ''
-    root_password = 'root'
-    bitbucket_username = ''
-    bitbucket_password = ''
-    docker_username = ''
-    docker_password = ''
-    branch_name = 'release/v2.4.1-baseline'
-    base_url = "http://localhost:8080/api/missions/import/upload"
-    ovpn_profile = "profile-"
-    ovpn_number = 0
-    install_method = "offline"
-    install_commands = []
-    resource_dir = SCRIPT_DIR
-    X310_FPGA_PATH = "/scratch/images/usrp_x310_fpga_XG.bit"
-    B210_FPGA_PATH = "/scratch/images/usrp_b210_fpga.bin"
-
-    # offline install commands
-    offline_commands = [
-        ["Starting ssh", "sudo", ["systemctl", "start", "ssh"]],
-        ["Enabling ssh now", "sudo", ["systemctl", "enable", "ssh", "--now"]],
-        ["Enabling ssh", "sudo", ["systemctl", "enable", "ssh"]],
-        ["Disabling firewall", "sudo", ["ufw", "disable"]],
-        ["Allowing port 22 to be used", "sudo", ["ufw", "allow", "ssh"]],
-        ["Starting xrdp", "sudo", ["systemctl", "start", "xrdp"]],
-        ["Enabling xrdp", "sudo", ["systemctl", "enable", "xrdp"]],
-        ["Installing minicom to look at hoover stack", "sudo", ["apt", "install", "minicom", "-y"]],
-        ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
-        ["Allowing connections from any host", "xhost", ["+"]],
-        ["Loading USRP FPGA", "uhd_image_loader", []],
-        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
-        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-
-        # Ensure xmmgr group exists
-        ["Ensure xmmgr group exists", "bash", ["-c", "getent group xmmgr || sudo groupadd xmmgr"]],
-        # Ensure user xmmgr exists and has correct group
-        ["Ensure xmmgr user exists", "bash", ["-c", (
-            "id -u xmmgr || "
-            "(sudo -S useradd -m -g xmmgr xmmgr && echo 'xmmgr:xmmgr' | sudo -S chpasswd)"
-        )
-        ]],
-        # Ensure docker group exists
-        ["Ensure docker group exists", "bash", ["-c", "getent group docker || sudo groupadd docker"]],
-        # Add xmmgr to docker group
-        ["Add xmmgr to docker group", "sudo", ["usermod", "-aG", "docker", "xmmgr"]],
-        # Restart and Enable docker for use
-        ["Restarting docker", "sudo", ["systemctl", "restart", "docker"]],
-        ["Enabling docker", "sudo", ["systemctl", "enable", "docker"]],
-        ["Checking docker status", "sudo", ["systemctl", "status", "docker"]],
-        
-        # Setting up usrp
-        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
-        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Loading USRP FPGA", "uhd_image_loader", []],
-
-        # Setting up launch dir
-        ["Removing existing launch directory", "bash", [
-            "-c",
-            'if [ -d "/home/xmmgr/launch" ]; then sudo rm -r "/home/xmmgr/launch"; fi'
-        ]],  
-        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar.gz"), "-C", "/home/xmmgr/"]],
-        ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/launch"]],
-        ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/launch"]],
-        ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
-
-        # Setting up recordings dir
-        ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
-        ["Creating dc_calibration directory", "mkdir", ["/home/xmmgr/recordings/dc_calibration"]],
-        ["Changing group of recordings directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings"]],
-        ["Changing owner of recordings directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings"]],
-        ["Changing group of dc_calibration directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
-        ["Changing owner of dc_calibration directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
-        ["Copying dc_calibration.sh to recordings", "sudo", ["cp", os.path.join(SCRIPT_DIR, "dc_calibration.sh"), "/home/xmmgr/recordings/dc_calibration/"]],
-        ["changing priveleges of dc_calibration.sh", "sudo", ["chmod", "755", "/home/xmmgr/recordings/dc_calibration/dc_calibration.sh"]],
-        
-        # Load Docker Images
-        ["creating postgres image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "postgres.tar.gz")]],
-        ["creating node-webserver image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "node-webserver.tar.gz")]],
-        ["creating client image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "client.tar.gz")]],
-        ["creating services image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "services.tar.gz")]],
-        ["creating signal image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "signal.tar.gz")]],
-        
-        # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
-        # ["changing to bash mode", "sed", ["-i" , "s/xmidas_node/bash/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-        # ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
-        # ["Creating Desktop icon", "sudo", [os.path.join(SCRIPT_DIR, "createDesktop.sh")]],
-        ["Copying OpenVPN files", "cp", [os.path.join(SCRIPT_DIR, "OpenVPN/"), "/home/xmmgr/", "-r"]],
-        ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
-
-        # Power down the machine once installation completes
-        ["Shutting down system", "sudo", ["shutdown", "-h", "now"]],
-
-        # ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
-        # ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]],
-    ]
-
-    # Ensure all sudo commands use the -S flag for password input
-    for cmd in offline_commands:
-        if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
-            cmd[2].insert(0, "-S")
-
-    # branch_name = 'release/v2.4.1-baseline'
     def __init__(self):
         super().__init__()
         print("Init")
+        # Configuration values
+        self.progress = 0
+        self.sudo_username = getpass.getuser()
+        self.sudo_password = ""
+        self.root_password = "root"
+        self.bitbucket_username = ""
+        self.bitbucket_password = ""
+        self.docker_username = ""
+        self.docker_password = ""
+        self.branch_name = 'release/v2.4.1-baseline'
+        self.base_url = "http://localhost:8080/api/missions/import/upload"
+        self.ovpn_profile = "profile-"
+        self.ovpn_number = 0
+        self.install_method = "offline"
+        self.install_commands = []
         self.resource_dir = SCRIPT_DIR
+        self.X310_FPGA_PATH = "/scratch/images/usrp_x310_fpga_XG.bit"
+        self.B210_FPGA_PATH = "/scratch/images/usrp_b210_fpga.bin"
+
+        # Default offline installation commands
+        self.offline_commands = [
+            ["Starting ssh", "sudo", ["systemctl", "start", "ssh"]],
+            ["Enabling ssh now", "sudo", ["systemctl", "enable", "ssh", "--now"]],
+            ["Enabling ssh", "sudo", ["systemctl", "enable", "ssh"]],
+            ["Disabling firewall", "sudo", ["ufw", "disable"]],
+            ["Allowing port 22 to be used", "sudo", ["ufw", "allow", "ssh"]],
+            ["Starting xrdp", "sudo", ["systemctl", "start", "xrdp"]],
+            ["Enabling xrdp", "sudo", ["systemctl", "enable", "xrdp"]],
+            ["Installing minicom to look at hoover stack", "sudo", ["apt", "install", "minicom", "-y"]],
+            ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
+            ["Allowing connections from any host", "xhost", ["+"]],
+            ["Loading USRP FPGA", "uhd_image_loader", []],
+            ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
+            ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
+
+            # Ensure xmmgr group exists
+            ["Ensure xmmgr group exists", "bash", ["-c", "getent group xmmgr || sudo groupadd xmmgr"]],
+            # Ensure user xmmgr exists and has correct group
+            ["Ensure xmmgr user exists", "bash", ["-c", (
+                "id -u xmmgr || "
+                "(sudo -S useradd -m -g xmmgr xmmgr && echo 'xmmgr:xmmgr' | sudo -S chpasswd)"
+            )]],
+            # Ensure docker group exists
+            ["Ensure docker group exists", "bash", ["-c", "getent group docker || sudo groupadd docker"]],
+            # Add xmmgr to docker group
+            ["Add xmmgr to docker group", "sudo", ["usermod", "-aG", "docker", "xmmgr"]],
+            # Restart and Enable docker for use
+            ["Restarting docker", "sudo", ["systemctl", "restart", "docker"]],
+            ["Enabling docker", "sudo", ["systemctl", "enable", "docker"]],
+            ["Checking docker status", "sudo", ["systemctl", "status", "docker"]],
+
+            # Setting up usrp
+            ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
+            ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
+            ["Loading USRP FPGA", "uhd_image_loader", []],
+
+            # Setting up launch dir
+            ["Removing existing launch directory", "bash", [
+                "-c",
+                'if [ -d "/home/xmmgr/launch" ]; then sudo rm -r "/home/xmmgr/launch"; fi'
+            ]],
+            ["moving launch directory", "tar", ["-xf", os.path.join(self.resource_dir, "launch.tar.gz"), "-C", "/home/xmmgr/"]],
+            ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/launch"]],
+            ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/launch"]],
+            ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(self.resource_dir, "createNodeConfigWizardDesktop.sh")]],
+
+            # Setting up recordings dir
+            ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
+            ["Creating dc_calibration directory", "mkdir", ["/home/xmmgr/recordings/dc_calibration"]],
+            ["Changing group of recordings directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings"]],
+            ["Changing owner of recordings directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings"]],
+            ["Changing group of dc_calibration directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
+            ["Changing owner of dc_calibration directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
+            ["Copying dc_calibration.sh to recordings", "sudo", ["cp", os.path.join(self.resource_dir, "dc_calibration.sh"), "/home/xmmgr/recordings/dc_calibration/"]],
+            ["changing priveleges of dc_calibration.sh", "sudo", ["chmod", "755", "/home/xmmgr/recordings/dc_calibration/dc_calibration.sh"]],
+
+            # Load Docker Images
+            ["creating postgres image", "sudo", ["docker", "load", "-i", os.path.join(self.resource_dir, "postgres.tar.gz")]],
+            ["creating node-webserver image", "sudo", ["docker", "load", "-i", os.path.join(self.resource_dir, "node-webserver.tar.gz")]],
+            ["creating client image", "sudo", ["docker", "load", "-i", os.path.join(self.resource_dir, "client.tar.gz")]],
+            ["creating services image", "sudo", ["docker", "load", "-i", os.path.join(self.resource_dir, "services.tar.gz")]],
+            ["creating signal image", "sudo", ["docker", "load", "-i", os.path.join(self.resource_dir, "signal.tar.gz")]],
+
+            # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
+            # ["changing to bash mode", "sed", ["-i" , "s/xmidas_node/bash/g", "/home/xmmgr/git/launch/trex_environment.sh"]],
+            # ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
+            # ["Creating Desktop icon", "sudo", [os.path.join(self.resource_dir, "createDesktop.sh")]],
+            ["Copying OpenVPN files", "cp", [os.path.join(self.resource_dir, "OpenVPN/"), "/home/xmmgr/", "-r"]],
+            ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
+
+            # Power down the machine once installation completes
+            ["Shutting down system", "sudo", ["shutdown", "-h", "now"]],
+
+            # ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
+            # ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]],
+        ]
+
+        # Ensure all sudo commands use the -S flag for password input
+        for cmd in self.offline_commands:
+            if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
+                cmd[2].insert(0, "-S")
+
         self.launch_parent_dir = os.path.join(os.path.expanduser("~"), "git")
         self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
         self.current_command = ""
