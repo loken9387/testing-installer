@@ -24,10 +24,8 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QTextBrowser,
     QCheckBox,
-    QRadioButton,
     QFileDialog,
-    QMessageBox,
-    QDialogButtonBox
+    QMessageBox
 )
 from PyQt6.QtGui import QGuiApplication
 
@@ -51,48 +49,6 @@ class MainWindow(QMainWindow):
         y = int((screen.height() - height) / 2)
         self.move(x, y)
 
-class OptionDialog(QDialog):
-    def __init__(self, title):
-        super().__init__()
-
-        self.selected_option = None
-
-        # Set up the layout
-        self.layout = QVBoxLayout()
-
-        # Create radio buttons for the two options
-        self.option1 = QRadioButton("Offline install")
-        self.option2 = QRadioButton("Online install")
-
-        # Add radio buttons to the layout
-        self.layout.addWidget(self.option1)
-        self.layout.addWidget(self.option2)
-
-        # Create the submit button
-        self.submit_button = QPushButton("Submit")
-        self.submit_button.clicked.connect(self.submit)
-
-        # Add the submit button to the layout
-        self.layout.addWidget(self.submit_button)
-
-        # Set the layout for the widget
-        self.setLayout(self.layout)
-
-    def submit(self):
-        if self.option1.isChecked():
-            self.selected_option = "offline"
-        elif self.option2.isChecked():
-            self.selected_option = "online"
-        else:
-            QMessageBox.warning(self, "No Selection", "Please select an option before submitting.")
-            return
-
-        # Print the selected option (for demonstration purposes)
-        print(f"Selected option: {self.selected_option}")
-
-        # Close the widget
-        self.accept()
-        self.close()
 
 class NetworkInfoDialog(QDialog):
     def __init__(self, parent=None):
@@ -217,7 +173,7 @@ class InstallerGUI(QWidget):
     base_url = "http://localhost:8080/api/missions/import/upload"
     ovpn_profile = "profile-"
     ovpn_number = 0
-    install_method = ""
+    install_method = "offline"
     install_commands = []
     resource_dir = SCRIPT_DIR
 
@@ -300,90 +256,11 @@ class InstallerGUI(QWidget):
         # ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
     ]
 
-    # online install commands
-    online_commands = [
-        ["Updating apt package index", "sudo", ["-S", "apt-get", "update", "-y"]],
-        ["Upgrading packages", "sudo", ["apt-get", "upgrade", "-y"]],
-        ["Installing openssh-server", "sudo", ["apt", "install", "openssh-server", "-y"]],
-        ["Starting ssh", "sudo", ["systemctl", "start", "ssh"]],
-        ["Enabling ssh now", "sudo", ["systemctl", "enable", "ssh", "--now"]],
-        ["Enabling ssh", "sudo", ["systemctl", "enable", "ssh"]],
-        ["Disabling firewall", "sudo", ["ufw", "disable"]],
-        ["Allowing port 22 to be used", "sudo", ["ufw", "allow", "ssh"]],
-        ["Installing vim", "sudo", ["apt", "install", "vim", "-y"]],
-        ["Installing locate", "sudo", ["apt", "install", "mlocate", "-y"]],
-        ["Installing find", "sudo", ["apt", "install", "find"]],
-        ["Installing Tigervncserver", "sudo", ["apt", "install", "tigervnc-standalone-server", "-y"]],
-        ["Installing Tigervncviewer", "sudo", ["apt", "install", "tigervnc-viewer", "-y"]],
-        ["Installing docker-compose", "sudo", ["apt", "install", "docker-compose", "-y"]],
-        ["Installing net-tools", "sudo", ["apt", "install", "net-tools", "-y"]],
-        ["Installing selinux-utils", "sudo", ["apt", "install", "selinux-utils", "-y"]],
-        ["Installing gcc", "sudo", ["apt", "install", "gcc", "-y"]],
-        ["Installing package needed to change gedit color scheme", "sudo", ["apt", "install", "dbus-x11", "-y"]],
-        ["Installing xrdp", "sudo", ["apt", "install", "xrdp", "-y"]],
-        ["Starting xrdp", "sudo", ["systemctl", "start", "xrdp"]],
-        ["Enabling xrdp", "sudo", ["systemctl", "enable", "xrdp"]],
-        ["Installing minicom to look at hoover stack", "sudo", ["apt", "install", "minicom", "-y"]],
-        ["Installing minicom", "sudo", ["dpkg", "-i", "minicom_2.8-2_amd64.deb", "-y"]],
-        ["Installing screen to look at gps", "sudo", ["apt", "install", "screen", "-y"]],
-        ["Installing dos2unix for cpu testing to convert windows file to linux", "sudo", ["apt", "install", "dos2unix"]],
-        ["Installing sensors for cpu testing", "sudo", ["apt", "install", "lm-sensors", "-y"]],
-        ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
-        ["Allowing connections from any host", "xhost", ["+"]],
-
-        ["Loading USRP FPGA", "uhd_image_loader", ["--args=type=x300,addr=192.168.40.2", "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"]],
-        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
-        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Making hosts.sh executable", "chmod", ["+x", "hosts.sh"]],
-        ["Running hosts.sh", "sudo", ["./hosts.sh"]],
-        ["Adding docker group", "sudo", ["groupadd", "docker"]],
-        ["Forcing adding docker group if it doesn't exist", "sudo", ["groupadd", "-f", "docker"]],
-        ["Adding user xmmgr to docker group", "sudo", ["usermod", "-aG", "docker", "xmmgr"]],
-        ["Restarting docker", "sudo", ["systemctl", "restart", "docker"]],
-        ["Enabling docker", "sudo", ["systemctl", "enable", "docker"]],
-        ["Checking docker status", "sudo", ["systemctl", "status", "docker"]],
-        ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
-        ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-
-        ["Creating git directory", "mkdir", ["/home/xmmgr/git"]],
-        ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
-        ["Changing owner of git directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git"]],
-        ["Removing existing launch directory", "sudo", ["rm", "-r", "/home/xmmgr/git/launch"]],
-        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar.gz"), "-C", "/home/xmmgr/git/"]],
-        ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
-        ["Moving launch to git directory", "sudo", ["mv", "launch", "/home/xmmgr/git/"]],
-        ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
-        ["Creating dc_calibration directory", "mkdir", ["/home/xmmgr/recordings/dc_calibration"]],
-        ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git/launch"]],
-        ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git/launch"]],
-        ["Changing group of recordings directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings"]],
-        ["Changing owner of recordings directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings"]],
-        ["Changing group of dc_calibration directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
-        ["Changing owner of dc_calibration directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
-        ["Copying dc_calibration.sh to recordings", "sudo", ["cp", os.path.join(SCRIPT_DIR, "dc_calibration.sh"), "/home/xmmgr/recordings/dc_calibration/"]],
-        ["changing priveleges of dc_calibration.sh", "sudo", ["chmod", "755", "/home/xmmgr/recordings/dc_calibration/dc_calibration.sh"]],
-
-        ["Creating Missions", "mkdir", ["/home/xmmgr/missions"]],
-        ["Adding read permission for webserver", "sudo", ["chmod", "664", "/home/xmmgr/git/launch/config/webserver/application.properties"]],
-        ["creating postgres image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "postgres.tar.gz")]],
-        ["creating node-webserver image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "node-webserver.tar.gz")]],
-        ["creating services image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "services.tar.gz")]],
-        ["creating signal image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "signal.tar.gz")]],
-        # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
-        ["changing to bash mode", "sed", ["-i" , "s/xmidas_node/bash/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
-        ["Creating Desktop icon", "sudo", [os.path.join(SCRIPT_DIR, "createDesktop.sh")]],
-        ["Copying OpenVPN files", "cp", [os.path.join(SCRIPT_DIR, "OpenVPN/"), "/home/xmmgr/", "-r"]],
-        ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
-        ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
-        ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]],
-    ]
 
     # Ensure all sudo commands use the -S flag for password input
-    for cmd_list in (offline_commands, online_commands):
-        for cmd in cmd_list:
-            if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
-                cmd[2].insert(0, "-S")
+    for cmd in offline_commands:
+        if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
+            cmd[2].insert(0, "-S")
 
     # branch_name = 'release/v2.4.1-baseline'
     def __init__(self):
@@ -411,7 +288,6 @@ class InstallerGUI(QWidget):
 
         self.dockerDialog = InputDialog("Docker Login")
         self.bitbucketDialog = InputDialog("Bitbucket Login")
-        self.installMethodDialog = OptionDialog("Installation Method")
         self.sudoDialog = InputDialog("Sudo Login")
         self.ovpnDialog = InputDialog("OVPN Profile Number")
         self.networkDialog = NetworkInfoDialog()
@@ -510,13 +386,8 @@ class InstallerGUI(QWidget):
         # self.request_docker()
         # self.updateMessage("Enter Bitbucket Credentials")
         # self.request_bitbucket()
-        self.requestInstallationMethod()
-        match self.install_method:
-            case "online":
-                self.install_commands.extend(self.online_commands)
-            case "offline":
-                self.offlineSetup()
-                self.install_commands.extend(self.offline_commands)
+        self.offlineSetup()
+        self.install_commands.extend(self.offline_commands)
         self.total_commands = len(self.install_commands)
         self.request_sudo()
         for i in self.install_commands:
@@ -610,15 +481,6 @@ class InstallerGUI(QWidget):
         self.startButton.setVisible(False)
         self.exitButton.setVisible(False)
  
-    def requestInstallationMethod(self):
-        self.center_layout.addWidget(self.installMethodDialog)
-        self.center_layout.setAlignment(self.installMethodDialog, Qt.AlignmentFlag.AlignCenter) 
-        if self.installMethodDialog.exec() == QDialog.DialogCode.Accepted:
-            self.installMethodDialog.setVisible(False)
-            self.install_method = self.installMethodDialog.selected_option
-            print("self.install_method = ", self.install_method)
-        self.center_layout.removeWidget(self.installMethodDialog) 
-    
     def request_sudo(self):
         self.center_layout.addWidget(self.sudoDialog)
         self.center_layout.setAlignment(self.sudoDialog, Qt.AlignmentFlag.AlignCenter)
@@ -724,9 +586,8 @@ class InstallerGUI(QWidget):
             "/home/xmmgr/Downloads/OpenVPN/": os.path.join(script_dir, "OpenVPN/"),
             os.path.join(SCRIPT_DIR, "OpenVPN/"): os.path.join(script_dir, "OpenVPN/"),
         }
-        for cmd_list in (self.offline_commands, self.online_commands):
-            for cmd in cmd_list:
-                cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
+        for cmd in self.offline_commands:
+            cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
 
     def verify_resource_directory(self, script_dir):
         required_files = [
