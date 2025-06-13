@@ -17,3 +17,5 @@ selinux-utils
 tigervnc-viewer
 xrdp
 wmdocker
+uhd-host
+uhd-images
