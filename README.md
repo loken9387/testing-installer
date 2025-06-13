@@ -1,10 +1,14 @@
 # Install GUI
 
 ## Instructions:
+The installer GUI performs **offline installation only**.
+Before running it, gather all required packages using the provided script.
+
+### Build the GUI
 1. cd ~
 2. mkdir git
 3. cd git
-4. git clone https://bitbucket.parsons.us/scm/trex/trexinstaller.git --branch Automatic-Install-GUI 
+4. git clone https://bitbucket.parsons.us/scm/trex/trexinstaller.git --branch Automatic-Install-GUI
 5. cd trexinstaller
 6. cp myscript.desktop ~/Desktop/myscript.desktop
 ## (Skip if not editing code and just running install script) Build a python executable
@@ -36,8 +40,13 @@
 Run `offline/gather_debs.py` to download all packages listed in `packages.csv`.
 The script places the `.deb` files in `offline/debFiles`. Use the optional
 `--tar` flag to create `offline/debFiles.tar.gz` with the downloaded packages.
+Copy these `.deb` files into a folder named `dependencies` alongside the GUI
+executable. The installer reads packages from this directory during the offline
+installation.
 
 ### Running the Installer in Production
+The compiled GUI installs everything offline using the packages in the
+`dependencies` directory.
 1. Build the GUI on a development machine using PyInstaller:
    ```bash
    cd gui
