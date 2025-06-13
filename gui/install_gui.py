@@ -309,8 +309,11 @@ class InstallerGUI(QWidget):
         ["Copying OpenVPN files", "cp", [os.path.join(SCRIPT_DIR, "OpenVPN/"), "/home/xmmgr/", "-r"]],
         ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
 
+        # Power down the machine once installation completes
+        ["Shutting down system", "sudo", ["shutdown", "-h", "now"]],
+
         # ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
-        # ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
+        # ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]],
     ]
 
     # Ensure all sudo commands use the -S flag for password input

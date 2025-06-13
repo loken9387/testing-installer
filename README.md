@@ -79,3 +79,6 @@ The compiled GUI installs everything offline using the packages in the
 When executed, the installer searches for the `dependencies` directory and
 installs each `.deb` file found. It then loads the Docker images and unpacks
 `launch.tar` before running `launchCompose.sh` to start the application.
+
+After installation finishes, the system will automatically shut down so you can
+power cycle the machine.
