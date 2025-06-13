@@ -1,6 +1,6 @@
 myenv/
 gui/build/
-gui/dist/install_gui
+gui/dist/*
 offline/debFiles/*.deb
 offline/debFiles/
 gui/build/install_gui/*.pkg

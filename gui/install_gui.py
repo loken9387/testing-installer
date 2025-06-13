@@ -3,7 +3,10 @@ import os
 import subprocess
 import getpass
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, "frozen", False):
+    SCRIPT_DIR = os.path.dirname(sys.executable)
+else:
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from PyQt6.QtCore import Qt, QProcess
 import qt_material
@@ -23,6 +26,8 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QRadioButton,
     QFileDialog,
+    QMessageBox,
+    QDialogButtonBox
 )
 from PyQt6.QtGui import QGuiApplication
 
@@ -214,6 +219,7 @@ class InstallerGUI(QWidget):
     ovpn_number = 0
     install_method = ""
     install_commands = []
+    resource_dir = SCRIPT_DIR
 
     # offline install commands
     offline_commands = [
@@ -230,47 +236,68 @@ class InstallerGUI(QWidget):
         ["Loading USRP FPGA", "uhd_image_loader", ["--args=type=x300,addr=192.168.40.2", "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"]],
         ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
         ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Ensure xmmgr user exists", "bash", ["-c", "id -u xmmgr || sudo useradd -m xmmgr && echo 'xmmgr:xmmgr' | sudo chpasswd"]],
-        ["Adding docker group", "sudo", ["groupadd", "docker"]],
-        ["Forcing adding docker group if it doesn't exist", "sudo", ["groupadd", "-f", "docker"]],
-        ["Adding user xmmgr to docker group", "sudo", ["usermod", "-aG", "docker", "xmmgr"]],
+
+        # Ensure xmmgr group exists
+        ["Ensure xmmgr group exists", "bash", ["-c", "getent group xmmgr || sudo groupadd xmmgr"]],
+        # Ensure user xmmgr exists and has correct group
+        ["Ensure xmmgr user exists", "bash", ["-c", (
+            "id -u xmmgr || "
+            "(sudo -S useradd -m -g xmmgr xmmgr && echo 'xmmgr:xmmgr' | sudo -S chpasswd)"
+        )
+        ]],
+        # Ensure docker group exists
+        ["Ensure docker group exists", "bash", ["-c", "getent group docker || sudo groupadd docker"]],
+        # Add xmmgr to docker group
+        ["Add xmmgr to docker group", "sudo", ["usermod", "-aG", "docker", "xmmgr"]],
+        # Restart and Enable docker for use
         ["Restarting docker", "sudo", ["systemctl", "restart", "docker"]],
         ["Enabling docker", "sudo", ["systemctl", "enable", "docker"]],
         ["Checking docker status", "sudo", ["systemctl", "status", "docker"]],
+        
+        # Setting up usrp
         ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
         ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Making usrp.sh executable in recordings", "sudo", ["chmod", "+x", "/home/xmmgr/recordings/usrp.sh"]],
+        ["Loading USRP FPGA", "uhd_image_loader", [
+            "--args=type=x300,addr=192.168.40.2",
+            "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"
+        ]],
 
-        ["Creating git directory", "mkdir", ["/home/xmmgr/git"]],
-        ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
-        ["Changing owner of git directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git"]],
-        ["Removing existing launch directory", "sudo", ["rm", "-r", "/home/xmmgr/git/launch"]],
-        ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
-        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar.gz"), "-C", "/home/xmmgr/git/"]],
-        ["Moving launch to git directory", "sudo", ["mv", "launch", "/home/xmmgr/git/"]],
+        # Setting up launch dir
+        ["Removing existing launch directory", "bash", [
+            "-c",
+            'if [ -d "/home/xmmgr/launch" ]; then sudo rm -r "/home/xmmgr/launch"; fi'
+        ]],  
+        # May remove this for the time being
+        # ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
+        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar.gz"), "-C", "/home/xmmgr/"]],
+        ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/launch"]],
+        ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/launch"]],
+
+        # Setting up recordings dir
         ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
         ["Creating dc_calibration directory", "mkdir", ["/home/xmmgr/recordings/dc_calibration"]],
-        ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git/launch"]],
-        ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git/launch"]],
         ["Changing group of recordings directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings"]],
         ["Changing owner of recordings directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings"]],
         ["Changing group of dc_calibration directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
         ["Changing owner of dc_calibration directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/recordings/dc_calibration"]],
         ["Copying dc_calibration.sh to recordings", "sudo", ["cp", os.path.join(SCRIPT_DIR, "dc_calibration.sh"), "/home/xmmgr/recordings/dc_calibration/"]],
         ["changing priveleges of dc_calibration.sh", "sudo", ["chmod", "755", "/home/xmmgr/recordings/dc_calibration/dc_calibration.sh"]],
+        
+        # Load Docker Images
         ["creating postgres image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "postgres.tar.gz")]],
         ["creating node-webserver image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "node-webserver.tar.gz")]],
         ["creating services image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "services.tar.gz")]],
         ["creating signal image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "signal.tar.gz")]],
+        
         # The folllowing steps require knowledge about how dc_calibration will be run, how containers will be changes form bash to xmidas_node, etc.
-        ["changing to bash mode", "sed", ["-i" , "s/xmidas_node/bash/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-        ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
-        ["Creating Desktop icon", "sudo", [os.path.join(SCRIPT_DIR, "createDesktop.sh")]],
+        # ["changing to bash mode", "sed", ["-i" , "s/xmidas_node/bash/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
+        # ["Running launchCompose.sh", "sudo", ["/home/xmmgr/git/trexinstaller/gui/source_trex.sh"]],
+        # ["Creating Desktop icon", "sudo", [os.path.join(SCRIPT_DIR, "createDesktop.sh")]],
         ["Copying OpenVPN files", "cp", [os.path.join(SCRIPT_DIR, "OpenVPN/"), "/home/xmmgr/", "-r"]],
-
         ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
-        ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
-        ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
+
+        # ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
+        # ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
     ]
 
     # online install commands
@@ -322,7 +349,7 @@ class InstallerGUI(QWidget):
         ["Changing group of git directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/git"]],
         ["Changing owner of git directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/git"]],
         ["Removing existing launch directory", "sudo", ["rm", "-r", "/home/xmmgr/git/launch"]],
-        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar"), "-C", "/home/xmmgr/git/"]],
+        ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar.gz"), "-C", "/home/xmmgr/git/"]],
         ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
         ["Moving launch to git directory", "sudo", ["mv", "launch", "/home/xmmgr/git/"]],
         ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
@@ -349,13 +376,20 @@ class InstallerGUI(QWidget):
         ["Copying OpenVPN files", "cp", [os.path.join(SCRIPT_DIR, "OpenVPN/"), "/home/xmmgr/", "-r"]],
         ["Adjusting OpenVPN file permissions", "sudo", ["chmod", "-R", "755", "/home/xmmgr/OpenVPN/"]],
         ["running dc_calibration", "sudo", ["docker", "exec", "node-service", "bash", "-c", "\"./root/.local/share/uhd/cal/dc_calibration.sh\""]],
-        ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]], 
-    ] 
+        ["changing to xmidas mode", "sed", ["-i" , "10,$s/bash/xmidas_node/g", "/home/xmmgr/git/launch/trex_environment.sh"]],
+    ]
+
+    # Ensure all sudo commands use the -S flag for password input
+    for cmd_list in (offline_commands, online_commands):
+        for cmd in cmd_list:
+            if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
+                cmd[2].insert(0, "-S")
 
     # branch_name = 'release/v2.4.1-baseline'
     def __init__(self):
         super().__init__()
         print("Init")
+        self.resource_dir = SCRIPT_DIR
         self.launch_parent_dir = os.path.join(os.path.expanduser("~"), "git")
         self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
         self.initUI()
@@ -414,7 +448,7 @@ class InstallerGUI(QWidget):
         self.setLayout(self.layout)
     
     def offlineSetup(self):
-        script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_dir = self.resource_dir
         thumb_drive_path = os.path.join(script_dir, "dependencies")
         self.update_resource_paths(script_dir)
         print("offlineSetup() function")
@@ -463,6 +497,8 @@ class InstallerGUI(QWidget):
         self.progressBar.setVisible(True)
 
         script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_dir = self.verify_resource_directory(script_dir)
+        self.resource_dir = script_dir
         self.update_resource_paths(script_dir)
 
         self.process = QProcess(self)
@@ -501,12 +537,15 @@ class InstallerGUI(QWidget):
             self.update_launch_paths()
         elif command[0] == "Removing existing launch directory":
             self.request_launch_location()
-            command[2][2] = self.launch_dir
+            # account for sudo -S at the beginning of the arguments
+            index = 3 if command[1] == "sudo" else 2
+            command[2][index] = self.launch_dir
             self.update_launch_paths()
         elif command[0] == "moving launch directory":
             command[2][3] = self.launch_parent_dir + "/"
         elif command[0] == "Moving launch to git directory":
-            command[2][2] = self.launch_parent_dir + "/"
+            index = 3 if command[1] == "sudo" else 2
+            command[2][index] = self.launch_parent_dir + "/"
         elif "clone" in command[2]:
             self.updateMessage("Enter Bitbucket Credentials")
             self.request_bitbucket()
@@ -514,12 +553,17 @@ class InstallerGUI(QWidget):
             command[2][1] = command[2][1].replace("password", self.bitbucket_password)
             command[2][3] = command[2][3].replace("branch_name", self.branch_name)
             print("command[1]", command[1])
-        elif "docker" in command[2][0] and "login" in command[2][1]:
+        elif "docker" in command[2] and "login" in command[2]:
             self.updateMessage("Enter Docker Credentials")
             self.request_docker()
             print("need to update docker credentials")
-            command[2][4] = self.docker_username
-            command[2][6] = self.docker_password
+            try:
+                user_index = command[2].index("-u") + 1
+                pass_index = command[2].index("-p") + 1
+                command[2][user_index] = self.docker_username
+                command[2][pass_index] = self.docker_password
+            except ValueError:
+                pass
         elif "Setting up ovpn profile" == command[0]:
             self.updateMessage("Enter OpenVPN profile number")
             self.request_ovpn()
@@ -665,17 +709,47 @@ class InstallerGUI(QWidget):
 
     def update_resource_paths(self, script_dir):
         replacements = {
-            "/home/xmmgr/Downloads/launch.tar": os.path.join(script_dir, "launch.tar"),
+            "/home/xmmgr/Downloads/launch.tar.gz": os.path.join(script_dir, "launch.tar.gz"),
+            os.path.join(SCRIPT_DIR, "launch.tar.gz"): os.path.join(script_dir, "launch.tar.gz"),
             "/home/xmmgr/Downloads/postgres.tar.gz": os.path.join(script_dir, "postgres.tar.gz"),
+            os.path.join(SCRIPT_DIR, "postgres.tar.gz"): os.path.join(script_dir, "postgres.tar.gz"),
             "/home/xmmgr/Downloads/node-webserver.tar.gz": os.path.join(script_dir, "node-webserver.tar.gz"),
+            os.path.join(SCRIPT_DIR, "node-webserver.tar.gz"): os.path.join(script_dir, "node-webserver.tar.gz"),
             "/home/xmmgr/Downloads/services.tar.gz": os.path.join(script_dir, "services.tar.gz"),
+            os.path.join(SCRIPT_DIR, "services.tar.gz"): os.path.join(script_dir, "services.tar.gz"),
             "/home/xmmgr/Downloads/signal.tar.gz": os.path.join(script_dir, "signal.tar.gz"),
+            os.path.join(SCRIPT_DIR, "signal.tar.gz"): os.path.join(script_dir, "signal.tar.gz"),
             "/home/xmmgr/Downloads/createDesktop.sh": os.path.join(script_dir, "createDesktop.sh"),
+            os.path.join(SCRIPT_DIR, "createDesktop.sh"): os.path.join(script_dir, "createDesktop.sh"),
             "/home/xmmgr/Downloads/OpenVPN/": os.path.join(script_dir, "OpenVPN/"),
+            os.path.join(SCRIPT_DIR, "OpenVPN/"): os.path.join(script_dir, "OpenVPN/"),
         }
         for cmd_list in (self.offline_commands, self.online_commands):
             for cmd in cmd_list:
                 cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
+
+    def verify_resource_directory(self, script_dir):
+        required_files = [
+            "launch.tar.gz",
+            "postgres.tar.gz",
+            "node-webserver.tar.gz",
+            "services.tar.gz",
+            "signal.tar.gz",
+        ]
+        missing = [f for f in required_files if not os.path.exists(os.path.join(script_dir, f))]
+        if missing:
+            msg = f"Resources missing in:\n{script_dir}\n" + "\n".join(missing)
+            box = QMessageBox(self)
+            box.setWindowTitle("Missing Resources")
+            box.setText(msg + "\nUse this directory?")
+            use_btn = box.addButton("Use This Directory", QMessageBox.ButtonRole.YesRole)
+            browse_btn = box.addButton("Browse", QMessageBox.ButtonRole.NoRole)
+            box.exec()
+            if box.clickedButton() == browse_btn:
+                selected_dir = QFileDialog.getExistingDirectory(self, "Select Resource Directory", script_dir)
+                if selected_dir:
+                    script_dir = selected_dir
+        return script_dir
 
     def read_output(self):
         output = self.process.readAllStandardOutput().data().decode()
@@ -701,17 +775,6 @@ class InstallerGUI(QWidget):
                 self.logsText.append("self.root_password: "+self.root_password)
             if "startVPN.service" in output:
                 self.process.write(b"q\n")
-            # elif "COMMAND_DONE" in output:
-            #     self.progress += 1
-            #     self.updateProgress(self.progress)
-            # elif "COMMAND: " in output:
-            #     output = output.replace("COMMAND: ", "")
-            #     self.updateMessage(output)
-            #     self.logsText.append(output)
-            #     print(output)
-            # else:
-            #     print(output)
-            #     self.logsText.append(output)
         
 
     def read_error(self):
