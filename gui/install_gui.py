@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QDialog,
+    QComboBox,
     QLabel,
     QHBoxLayout,
     QSizePolicy,
@@ -102,6 +103,63 @@ class NetworkInfoDialog(QDialog):
         # Set the layout for the dialog
         self.setLayout(layout)
 
+class RadioConfigDialog(QDialog):
+    """Dialog to configure USRP device type and connection."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Radio Configuration")
+
+        layout = QVBoxLayout()
+
+        layout.addWidget(QLabel("Device Type"))
+        self.device_combo = QComboBox()
+        self.device_combo.addItems(["x310", "b210"])
+        layout.addWidget(self.device_combo)
+
+        layout.addWidget(QLabel("IP Address or Serial Number"))
+        self.conn_edit = QLineEdit()
+        layout.addWidget(self.conn_edit)
+
+        self.verify_button = QPushButton("Verify Connection")
+        self.verify_button.clicked.connect(self.verify_connection)
+        layout.addWidget(self.verify_button)
+
+        self.output = QTextBrowser()
+        self.output.setVisible(False)
+        layout.addWidget(self.output)
+
+        self.button_box = QHBoxLayout()
+        self.ok_button = QPushButton("OK")
+        self.cancel_button = QPushButton("Cancel")
+        self.ok_button.clicked.connect(self.accept)
+        self.cancel_button.clicked.connect(self.reject)
+        self.button_box.addWidget(self.ok_button)
+        self.button_box.addWidget(self.cancel_button)
+        layout.addLayout(self.button_box)
+
+        self.setLayout(layout)
+
+    def verify_connection(self):
+        """Run uhd_find_devices to verify connectivity."""
+        device = self.device_combo.currentText()
+        addr = self.conn_edit.text().strip()
+        args = ["--args"]
+        if device == "x310":
+            args.append(f"type=x300,addr={addr}")
+        else:
+            serial_arg = f",serial={addr}" if addr else ""
+            args.append(f"type=b200{serial_arg}")
+        try:
+            result = subprocess.run([
+                "uhd_find_devices",
+                *args
+            ], capture_output=True, text=True, check=False)
+            self.output.setVisible(True)
+            self.output.setText(result.stdout + "\n" + result.stderr)
+        except Exception as exc:
+            self.output.setVisible(True)
+            self.output.setText(str(exc))
+
 class InputDialog(QDialog):
     def __init__(self, title):
         super().__init__()
@@ -176,6 +234,8 @@ class InstallerGUI(QWidget):
     install_method = "offline"
     install_commands = []
     resource_dir = SCRIPT_DIR
+    X310_FPGA_PATH = "/scratch/images/usrp_x310_fpga_XG.bit"
+    B210_FPGA_PATH = "/scratch/images/usrp_b210_fpga.bin"
 
     # offline install commands
     offline_commands = [
@@ -189,7 +249,7 @@ class InstallerGUI(QWidget):
         ["Installing minicom to look at hoover stack", "sudo", ["apt", "install", "minicom", "-y"]],
         ["Setting correct performance mode", "echo", ["performance", "|", "sudo", "tee", "/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"]],
         ["Allowing connections from any host", "xhost", ["+"]],
-        ["Loading USRP FPGA", "uhd_image_loader", ["--args=type=x300,addr=192.168.40.2", "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"]],
+        ["Loading USRP FPGA", "uhd_image_loader", []],
         ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
         ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
 
@@ -213,10 +273,7 @@ class InstallerGUI(QWidget):
         # Setting up usrp
         ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
         ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-        ["Loading USRP FPGA", "uhd_image_loader", [
-            "--args=type=x300,addr=192.168.40.2",
-            "--fpga-path=/scratch/images/usrp_x310_fpga_XG.bit"
-        ]],
+        ["Loading USRP FPGA", "uhd_image_loader", []],
 
         # Setting up launch dir
         ["Removing existing launch directory", "bash", [
@@ -415,6 +472,23 @@ class InstallerGUI(QWidget):
         elif command[0] == "Moving launch to git directory":
             index = 3 if command[1] == "sudo" else 2
             command[2][index] = self.launch_parent_dir + "/"
+        elif command[0] == "Loading USRP FPGA":
+            dialog = RadioConfigDialog(self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                device = dialog.device_combo.currentText()
+                addr = dialog.conn_edit.text().strip()
+                if device == "x310":
+                    command[2] = [f"--args=type=x300,addr={addr}", f"--fpga-path={self.X310_FPGA_PATH}"]
+                else:
+                    serial_arg = f",serial={addr}" if addr else ""
+                    command[2] = [f"--args=type=b200{serial_arg}", f"--fpga-path={self.B210_FPGA_PATH}"]
+            else:
+                # skip command if dialog cancelled
+                self.progress += 1
+                self.updateProgress(self.progress)
+                if self.install_commands:
+                    self.startProcess()
+                return
         elif "clone" in command[2]:
             self.updateMessage("Enter Bitbucket Credentials")
             self.request_bitbucket()
