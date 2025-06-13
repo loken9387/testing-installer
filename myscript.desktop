@@ -4,5 +4,5 @@ Type=Application
 Name=Install TReX
 Comment=Run my Python script
 Exec=/home/xmmgr/git/trexinstaller/gui/dist/install_gui
-#Icon=/home/username/icons/python-icon.png
-Terminal=True
+Icon=/home/xmmgr/git/launch/nodeConfigWizard.png
+Terminal=false
