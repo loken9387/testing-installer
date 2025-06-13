@@ -43,7 +43,8 @@ into the `offline/debFiles` directory. Use the optional `--tar` flag to create
 `offline/debFiles.tar.gz` with the downloaded packages.
 Copy these `.deb` files into a folder named `dependencies` alongside the GUI
 executable. The installer reads packages from this directory during the offline
-installation.
+installation. Packages are installed in the same order they are listed in
+`packages.csv`, ensuring a deterministic installation sequence.
 
 ### Running the Installer in Production
 The compiled GUI installs everything offline using the packages in the
