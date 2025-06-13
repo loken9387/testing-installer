@@ -38,9 +38,10 @@ Before running it, gather all required packages using the provided script.
 
 ### Preparing Offline Packages
 Run `offline/gather_debs.py` to download all packages listed in `packages.csv`.
-The script now uses apt to fetch each package **and all of its dependencies**
-into the `offline/debFiles` directory. Use the optional `--tar` flag to create
-`offline/debFiles.tar.gz` with the downloaded packages.
+The script uses apt to fetch each package **and all of its dependencies** into
+the `offline/debFiles` directory. It also writes `package_order.txt` inside this
+directory recording the order the `.deb` files were retrieved. Use the optional
+`--tar` flag to create `offline/debFiles.tar.gz` with the downloaded packages.
 After gathering the packages, execute `offline/get_fpga_images.py` to extract
 the X310 and B210 FPGA images from the `uhd-images` package. The images are
 placed in `offline/fpga_images` so they can be copied to the target system
@@ -48,8 +49,9 @@ without requiring internet access.
 
 Copy all `.deb` files into a folder named `dependencies` alongside the GUI
 executable. The installer reads packages from this directory during the offline
-installation. Packages are installed in the same order they are listed in
-`packages.csv`, ensuring a deterministic installation sequence.
+installation. If `package_order.txt` is present in `dependencies` it is used to
+install the packages in the recorded order; otherwise the order from
+`packages.csv` is used to ensure a deterministic installation sequence.
 
 ### Running the Installer in Production
 The compiled GUI installs everything offline using the packages in the
