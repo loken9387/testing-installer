@@ -298,6 +298,7 @@ class InstallerGUI(QWidget):
         # Load Docker Images
         ["creating postgres image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "postgres.tar.gz")]],
         ["creating node-webserver image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "node-webserver.tar.gz")]],
+        ["creating client image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "client.tar.gz")]],
         ["creating services image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "services.tar.gz")]],
         ["creating signal image", "sudo", ["docker", "load", "-i", os.path.join(SCRIPT_DIR, "signal.tar.gz")]],
         
@@ -649,6 +650,8 @@ class InstallerGUI(QWidget):
             os.path.join(SCRIPT_DIR, "postgres.tar.gz"): os.path.join(script_dir, "postgres.tar.gz"),
             "/home/xmmgr/Downloads/node-webserver.tar.gz": os.path.join(script_dir, "node-webserver.tar.gz"),
             os.path.join(SCRIPT_DIR, "node-webserver.tar.gz"): os.path.join(script_dir, "node-webserver.tar.gz"),
+            "/home/xmmgr/Downloads/client.tar.gz": os.path.join(script_dir, "client.tar.gz"),
+            os.path.join(SCRIPT_DIR, "client.tar.gz"): os.path.join(script_dir, "client.tar.gz"),
             "/home/xmmgr/Downloads/services.tar.gz": os.path.join(script_dir, "services.tar.gz"),
             os.path.join(SCRIPT_DIR, "services.tar.gz"): os.path.join(script_dir, "services.tar.gz"),
             "/home/xmmgr/Downloads/signal.tar.gz": os.path.join(script_dir, "signal.tar.gz"),
@@ -669,6 +672,7 @@ class InstallerGUI(QWidget):
             "node-webserver.tar.gz",
             "services.tar.gz",
             "signal.tar.gz",
+            "client.tar.gz"
         ]
         missing = [f for f in required_files if not os.path.exists(os.path.join(script_dir, f))]
         if missing:
