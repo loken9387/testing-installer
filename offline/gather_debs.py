@@ -22,7 +22,20 @@ def download_package(package: str, dest: Path):
         output = dest / 'google-chrome-stable_current_amd64.deb'
         subprocess.run(['wget', '-O', str(output), url], check=True)
     else:
-        subprocess.run(['apt-get', 'download', package], cwd=dest, check=True)
+        # Use apt-get's install command in download-only mode so that
+        # all dependencies of the package are fetched as well.
+        subprocess.run(
+            [
+                'apt-get',
+                'install',
+                '--download-only',
+                '--yes',
+                '-o', f'Dir::Cache={dest}',
+                '-o', f'Dir::Cache::archives={dest}',
+                package,
+            ],
+            check=True,
+        )
 
 
 def create_tarball(src_dir: Path, tar_path: Path):

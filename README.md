@@ -38,8 +38,9 @@ Before running it, gather all required packages using the provided script.
 
 ### Preparing Offline Packages
 Run `offline/gather_debs.py` to download all packages listed in `packages.csv`.
-The script places the `.deb` files in `offline/debFiles`. Use the optional
-`--tar` flag to create `offline/debFiles.tar.gz` with the downloaded packages.
+The script now uses apt to fetch each package **and all of its dependencies**
+into the `offline/debFiles` directory. Use the optional `--tar` flag to create
+`offline/debFiles.tar.gz` with the downloaded packages.
 Copy these `.deb` files into a folder named `dependencies` alongside the GUI
 executable. The installer reads packages from this directory during the offline
 installation.
