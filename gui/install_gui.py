@@ -223,11 +223,10 @@ class InstallerGUI(QWidget):
             "-c",
             'if [ -d "/home/xmmgr/launch" ]; then sudo rm -r "/home/xmmgr/launch"; fi'
         ]],  
-        # May remove this for the time being
-        # ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
         ["moving launch directory", "tar", ["-xf", os.path.join(SCRIPT_DIR, "launch.tar.gz"), "-C", "/home/xmmgr/"]],
         ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/launch"]],
         ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/launch"]],
+        ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(SCRIPT_DIR, "createNodeConfigWizardDesktop.sh")]],
 
         # Setting up recordings dir
         ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
