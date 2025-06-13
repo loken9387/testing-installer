@@ -354,6 +354,10 @@ class InstallerGUI(QWidget):
         self.progressBar.setAlignment(Qt.AlignmentFlag.AlignBottom)
         self.layout.addWidget(self.progressBar)
 
+        self.statusLabel = QLabel("")
+        self.statusLabel.setVisible(False)
+        self.layout.addWidget(self.statusLabel)
+
         self.startButton = QPushButton('Start Installation', self)
         self.startButton.clicked.connect(self.startInstallation)
         self.layout.addWidget(self.startButton)
@@ -427,6 +431,7 @@ class InstallerGUI(QWidget):
         self.startButton.setEnabled(False)
         self.startButton.setVisible(False)
         self.progressBar.setVisible(True)
+        self.statusLabel.setVisible(True)
 
         script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
         script_dir = self.verify_resource_directory(script_dir)
@@ -487,6 +492,7 @@ class InstallerGUI(QWidget):
                 # skip command if dialog cancelled
                 self.progress += 1
                 self.updateProgress(self.progress)
+                self.statusLabel.setText(f"Processes left: {len(self.install_commands)}")
                 if self.install_commands:
                     self.startProcess()
                 return
@@ -527,11 +533,10 @@ class InstallerGUI(QWidget):
             print("command: ", command)
         description = command[0]
         self.label.setText(description)
+        self.statusLabel.setText(f"Processes left: {len(self.install_commands)}")
         print("Executing command: ", command[1]+" "+" ".join(command[2]))
         self.updateMessage(command[0])
         self.process.start(command[1], command[2])
-        self.progress += 1
-        self.updateProgress(self.progress)
         print("End of startProcess")
 
     def logs(self, state):
@@ -736,11 +741,14 @@ class InstallerGUI(QWidget):
 
     def process_finished(self, exit_code, exit_status):
         self.logsText.append(f"Process finished with exit code {exit_code}")
+        self.progress += 1
+        self.updateProgress(self.progress)
+        self.statusLabel.setText(f"Processes left: {len(self.install_commands)}")
         print("Processes left: ", len(self.install_commands))
         if self.install_commands:
             self.startProcess()
         else:
-            self.exitButton.setVisible(True) 
+            self.exitButton.setVisible(True)
             self.label.setText('Installation completed.')
             self.progressBar.setValue(100)
     
