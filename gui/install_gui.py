@@ -325,6 +325,7 @@ class InstallerGUI(QWidget):
         self.resource_dir = SCRIPT_DIR
         self.launch_parent_dir = os.path.join(os.path.expanduser("~"), "git")
         self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
+        self.current_command = ""
         self.initUI()
 
     def initUI(self):
@@ -532,7 +533,10 @@ class InstallerGUI(QWidget):
         else:
             print("command: ", command)
         description = command[0]
+        self.current_command = description
         self.label.setText(description)
+        if description == "Loading USRP FPGA":
+            self.logsChecked.setChecked(True)
         self.statusLabel.setText(f"Processes left: {len(self.install_commands)}")
         print("Executing command: ", command[1]+" "+" ".join(command[2]))
         self.updateMessage(command[0])
@@ -703,7 +707,10 @@ class InstallerGUI(QWidget):
             print(output)
             self.logsText.append(output)
             if "WARNING: apt does not have a stable CLI interface. Use with caution in scripts." in output:
-                output = output.replace("WARNING: apt does not have a stable CLI interface. Use with caution in scripts.", "")    
+                output = output.replace("WARNING: apt does not have a stable CLI interface. Use with caution in scripts.", "")
+
+            if self.current_command == "Loading USRP FPGA":
+                self.statusLabel.setText(output.strip())
             if "overwrite" in output:
                 self.logsText.append(output)
                 print(output)
@@ -744,6 +751,7 @@ class InstallerGUI(QWidget):
         self.progress += 1
         self.updateProgress(self.progress)
         self.statusLabel.setText(f"Processes left: {len(self.install_commands)}")
+        self.current_command = ""
         print("Processes left: ", len(self.install_commands))
         if self.install_commands:
             self.startProcess()
