@@ -22,14 +22,14 @@ def download_package(package: str, dest: Path):
         output = dest / 'google-chrome-stable_current_amd64.deb'
         subprocess.run(['wget', '-O', str(output), url], check=True)
     else:
-        # Use apt-get's install command in download-only mode so that
-        # all dependencies of the package are fetched as well.
+        # Clean old .deb files for this package (optional)
+        for f in dest.glob(f"{package}_*.deb"):
+            f.unlink()
+
         subprocess.run(
             [
-                'apt-get',
-                'install',
-                '--download-only',
-                '--yes',
+                'apt-get', 'install', '--download-only', '--yes',
+                '--reinstall',  # Ensures action even if installed
                 '-o', f'Dir::Cache={dest}',
                 '-o', f'Dir::Cache::archives={dest}',
                 package,

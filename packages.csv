@@ -1,4 +1,4 @@
-find
+findutils
 minicom
 vim
 mlocate
@@ -19,3 +19,21 @@ xrdp
 wmdocker
 uhd-host
 uhd-images
+python3-docker
+python3-dockerpty
+python3-docopt
+python3-dotenv
+python3-jsonschema
+python3-texttable
+python3-websocket
+python3-distutils
+plocate
+openssh-client
+openssh-sftp-server
+libutempter0
+tigervnc-common
+libfile-readbackwards-perl
+libfltk-images1.3
+libfltk1.3
+vim-common
+vim-runtime
