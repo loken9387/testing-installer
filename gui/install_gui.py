@@ -24,10 +24,8 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QTextBrowser,
     QCheckBox,
-    QRadioButton,
     QFileDialog,
-    QMessageBox,
-    QDialogButtonBox
+    QMessageBox
 )
 from PyQt6.QtGui import QGuiApplication
 
@@ -175,6 +173,7 @@ class InstallerGUI(QWidget):
     base_url = "http://localhost:8080/api/missions/import/upload"
     ovpn_profile = "profile-"
     ovpn_number = 0
+    install_method = "offline"
     install_commands = []
     resource_dir = SCRIPT_DIR
 
@@ -258,10 +257,9 @@ class InstallerGUI(QWidget):
     ]
 
     # Ensure all sudo commands use the -S flag for password input
-    for cmd_list in (offline_commands,):
-        for cmd in cmd_list:
-            if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
-                cmd[2].insert(0, "-S")
+    for cmd in offline_commands:
+        if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
+            cmd[2].insert(0, "-S")
 
     # branch_name = 'release/v2.4.1-baseline'
     def __init__(self):
@@ -587,9 +585,9 @@ class InstallerGUI(QWidget):
             "/home/xmmgr/Downloads/OpenVPN/": os.path.join(script_dir, "OpenVPN/"),
             os.path.join(SCRIPT_DIR, "OpenVPN/"): os.path.join(script_dir, "OpenVPN/"),
         }
-        for cmd_list in (self.offline_commands,):
-            for cmd in cmd_list:
-                cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
+
+        for cmd in self.offline_commands:
+            cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
 
     def verify_resource_directory(self, script_dir):
         required_files = [
