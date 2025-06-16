@@ -528,6 +528,20 @@ class InstallerGUI(QWidget):
                 if self.install_commands:
                     self.startProcess()
                 return
+        elif command[0] == "Shutting down system":
+            box = QMessageBox(self)
+            box.setWindowTitle("Confirm Shutdown")
+            box.setText("Installation completed. Shut down now?")
+            box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            choice = box.exec()
+            if choice != QMessageBox.StandardButton.Yes:
+                self.progress += 1
+                self.updateProgress(self.progress)
+                self.statusLabel.setText(f"Processes left: {len(self.install_commands)}")
+                self.exitButton.setVisible(True)
+                self.label.setText('Installation completed.')
+                self.progressBar.setValue(100)
+                return
         elif "clone" in command[2]:
             command[2][1] = command[2][1].replace("username", self.bitbucket_username)
             command[2][1] = command[2][1].replace("password", self.bitbucket_password)
