@@ -531,16 +531,11 @@ class InstallerGUI(QWidget):
                     self.startProcess()
                 return
         elif "clone" in command[2]:
-            self.updateMessage("Enter Bitbucket Credentials")
-            self.request_bitbucket()
             command[2][1] = command[2][1].replace("username", self.bitbucket_username)
             command[2][1] = command[2][1].replace("password", self.bitbucket_password)
             command[2][3] = command[2][3].replace("branch_name", self.branch_name)
             print("command[1]", command[1])
         elif "docker" in command[2] and "login" in command[2]:
-            self.updateMessage("Enter Docker Credentials")
-            self.request_docker()
-            print("need to update docker credentials")
             try:
                 user_index = command[2].index("-u") + 1
                 pass_index = command[2].index("-p") + 1
@@ -549,9 +544,6 @@ class InstallerGUI(QWidget):
             except ValueError:
                 pass
         elif "Setting up ovpn profile" == command[0]:
-            self.updateMessage("Enter OpenVPN profile number")
-            self.request_ovpn()
-            print("need to update ovpn profile")
             command[2][2] = self.ovpn_profile
         #elif "docker" in command[1] and "load" in command[2][1]:
             #self.process.start("docker", ["image", "ls", "docker-trex.artifactory.parsons.us/trex/"+command[0]])
@@ -591,10 +583,6 @@ class InstallerGUI(QWidget):
     def quitWindow(self):
         QApplication.instance().quit()
 
-    def onReset(self, input):
-        self.label.setText("Next step: ", input)
-        self.startButton.setVisible(False)
-        self.exitButton.setVisible(False)
  
     def request_sudo(self):
         self.center_layout.addWidget(self.sudoDialog)
@@ -609,41 +597,6 @@ class InstallerGUI(QWidget):
             print("Sudo username: ", self.sudo_username, ", sudo password: ", self.sudo_password, ", branch: ", nothing2)
         self.center_layout.removeWidget(self.sudoDialog)
 
-    def request_docker(self):
-        self.center_layout.addWidget(self.dockerDialog)
-        self.center_layout.setAlignment(self.dockerDialog, Qt.AlignmentFlag.AlignCenter)
-        self.dockerDialog.visible()
-        self.dockerDialog.input1.setFocus()
-        if self.dockerDialog.exec() == QDialog.DialogCode.Accepted:
-            self.docker_username, self.docker_password, nothing = self.dockerDialog.get_inputs()
-        self.center_layout.removeWidget(self.dockerDialog)
-
-    def request_bitbucket(self):
-        self.center_layout.addWidget(self.bitbucketDialog)
-        self.center_layout.setAlignment(self.bitbucketDialog, Qt.AlignmentFlag.AlignCenter)
-        self.bitbucketDialog.visible()
-        self.bitbucketDialog.input1.setFocus()
-        if self.bitbucketDialog.exec() == QDialog.DialogCode.Accepted:
-            self.bitbucketDialog.setVisible(False)
-            self.bitbucket_username, self.bitbucket_password, self.branch_name = self.bitbucketDialog.get_inputs()
-            self.set_bitbucket(self.bitbucket_username, self.bitbucket_password)
-            print("updating bitbucket username/password: ", self.bitbucket_username, " ", self.bitbucket_password)
-            if self.branch_name == "":
-                self.branch_name = 'release/v2.4.1-baseline'
-        self.center_layout.removeWidget(self.bitbucketDialog)
-    
-    def request_ovpn(self):
-        self.center_layout.addWidget(self.ovpnDialog)
-        self.center_layout.setAlignment(self.ovpnDialog, Qt.AlignmentFlag.AlignCenter)
-        self.ovpnDialog.visible()
-        self.ovpnDialog.input1.setFocus()
-        if self.ovpnDialog.exec() == QDialog.DialogCode.Accepted:
-            self.ovpnDialog.setVisible(False)
-            x, self.ovpn_number, y = self.ovpnDialog.get_inputs()
-            print("self.ovpn_number: ", self.ovpn_number, "; x: ", x, "; y: ", y)
-            self.ovpn_profile = "profile-" + self.ovpn_number + ".ovpn"
-            print("updating ovpn profile: ", self.ovpn_profile)
-        self.center_layout.removeWidget(self.ovpnDialog)
 
     def request_launch_location(self):
         default_dir = self.launch_parent_dir
@@ -663,10 +616,6 @@ class InstallerGUI(QWidget):
         if self.networkDialog.exec() == QDialog.DialogCode.Accepted:
             self.center_layout.removeWidget(self.networkDialog)
 
-    def set_bitbucket(self, username, password):
-        self.bitbucket_username = username.replace("@", "%40")
-        self.bitbucket_password = password.replace("@", "%40")
-        # self.branch_name =
 
     def update_launch_paths(self):
         for cmd in self.install_commands:
