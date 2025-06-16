@@ -44,6 +44,7 @@ by modification time and writes that sequence to `package_order.txt`. This file
 captures the exact order packages were retrieved so dependencies can be
 installed first. Use the optional `--tar` flag to create `offline/debFiles.tar.gz`
 with the downloaded packages.
+
 After gathering the packages, execute `offline/get_fpga_images.py` to extract
 the X310 and B210 FPGA images from the `uhd-images` package. The images are
 placed in `offline/fpga_images` so they can be copied to the target system

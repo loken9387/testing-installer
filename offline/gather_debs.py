@@ -23,6 +23,7 @@ def download_package(package: str, dest: Path) -> List[str]:
     the order they were retrieved."""
     before = {p.name: p.stat().st_mtime for p in dest.glob('*.deb')}
 
+
     if package.startswith('./google-chrome-stable_current_amd64.deb'):
         url = 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb'
         output = dest / 'google-chrome-stable_current_amd64.deb'
@@ -49,6 +50,7 @@ def download_package(package: str, dest: Path) -> List[str]:
     return [name for name, _ in new]
 
 
+
 def create_tarball(src_dir: Path, tar_path: Path):
     subprocess.run(['tar', '-czvf', str(tar_path), '-C', str(src_dir), '.'], check=True)
 
@@ -72,6 +74,7 @@ def main():
                 seen[fname] = (download_dir / fname).stat().st_mtime
         except subprocess.CalledProcessError as exc:
             print(f"Failed to download {package}: {exc}")
+
 
     order_path = download_dir / 'package_order.txt'
     with order_path.open('w') as order_file:
