@@ -19,7 +19,7 @@ tigervnc-viewer
 xrdp
 wmdocker
 uhd-host
-uhd-images
+libuhd-dev
 python3-docker
 python3-dockerpty
 python3-docopt

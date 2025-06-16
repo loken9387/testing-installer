@@ -4,7 +4,7 @@
 a = Analysis(
     ['install_gui.py'],
     pathex=[],
-    binaries=[('/usr/lib/x86_64-linux-gnu/libpython3.10.so', '.')],
+    binaries=[],
     datas=[],
     hiddenimports=[],
     hookspath=[],

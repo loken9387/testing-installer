@@ -241,8 +241,8 @@ class InstallerGUI(QWidget):
         self.install_method = "online"
         self.install_commands = []
         self.resource_dir = SCRIPT_DIR
-        self.X310_FPGA_PATH = "/scratch/images/usrp_x310_fpga_XG.bit"
-        self.B210_FPGA_PATH = "/scratch/images/usrp_b210_fpga.bin"
+        self.X310_FPGA_PATH = "/usr/local/share/uhd/images/usrp_x310_fpga_XG.bit"
+        self.B210_FPGA_PATH = "/usr/local/share/uhd/images/usrp_b210_fpga.bin"
 
         # Commands run after packages are installed
         self.post_install_commands = [
