@@ -397,47 +397,60 @@ class InstallerGUI(QWidget):
         if not os.path.exists(thumb_drive_path):
             raise FileNotFoundError(f"The thumb drive path {thumb_drive_path} does not exist.")
 
-        packages_path = os.path.join(script_dir, "packages.csv")
-        package_order = []
-        if os.path.exists(packages_path):
-            with open(packages_path, newline="") as f:
-                for row in csv.reader(f):
-                    if not row:
-                        continue
-                    pkg = row[0].strip()
-                    if pkg and not pkg.startswith("#"):
-                        package_order.append(pkg)
-
-        available = [f for f in os.listdir(thumb_drive_path) if f.endswith(".deb")]
+        order_file = os.path.join(thumb_drive_path, "package_order.txt")
         ordered_files = []
-        used = set()
+        if os.path.exists(order_file):
+            with open(order_file) as f:
+                for line in f:
+                    name = line.strip()
+                    if name:
+                        ordered_files.append(name)
+            available = [f for f in os.listdir(thumb_drive_path) if f.endswith(".deb")]
+            for f in sorted(available):
+                if f not in ordered_files:
+                    ordered_files.append(f)
+        else:
+            packages_path = os.path.join(script_dir, "packages.csv")
+            package_order = []
+            if os.path.exists(packages_path):
+                with open(packages_path, newline="") as f:
+                    for row in csv.reader(f):
+                        if not row:
+                            continue
+                        pkg = row[0].strip()
+                        if pkg and not pkg.startswith("#"):
+                            package_order.append(pkg)
 
-        for pkg in package_order:
-            if pkg.endswith(".deb"):
-                name = os.path.basename(pkg)
-                if name in available and name not in used:
-                    ordered_files.append(name)
-                    used.add(name)
-                continue
+            available = [f for f in os.listdir(thumb_drive_path) if f.endswith(".deb")]
+            used = set()
 
-            pattern = f"{pkg}_*.deb"
-            matches = [f for f in available if fnmatch.fnmatch(f, pattern)]
-            if matches:
-                matches.sort()
-                chosen = matches[0]
-                if chosen not in used:
-                    ordered_files.append(chosen)
-                    used.add(chosen)
+            for pkg in package_order:
+                if pkg.endswith(".deb"):
+                    name = os.path.basename(pkg)
+                    if name in available and name not in used:
+                        ordered_files.append(name)
+                        used.add(name)
+                    continue
 
-        for f in sorted(available):
-            if f not in used:
-                ordered_files.append(f)
+                pattern = f"{pkg}_*.deb"
+                matches = [f for f in available if fnmatch.fnmatch(f, pattern)]
+                if matches:
+                    matches.sort()
+                    chosen = matches[0]
+                    if chosen not in used:
+                        ordered_files.append(chosen)
+                        used.add(chosen)
+
+            for f in sorted(available):
+                if f not in used:
+                    ordered_files.append(f)
 
         for deb_file in ordered_files:
             deb_file_path = os.path.join(thumb_drive_path, deb_file)
             self.install_commands.append([
                 f"Installing {deb_file}", "sudo", ["-S", "dpkg", "-i", deb_file_path]
             ])
+
         
         serverCommand = -1
         sftpCommand = -1
