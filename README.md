@@ -24,8 +24,10 @@ Ensure the machine running the installer has network access.
 1. right click on desktop icon, select properties, under permissions, select None for "Others Access"
 2. right click on desktop icon "Install TReX" and select allow launching
 3. double click icon to launch script
-4. After installation completes, a `nodeConfigWizard.desktop` file will appear
-   on your Desktop. Double-click it to run the Node Config Wizard executable.
+4. After installation completes, the installer creates a system‑wide desktop
+   entry at `/usr/share/applications/nodeConfigWizard.desktop`. A shortcut is
+   also placed on each user's Desktop so you can double‑click it to run the
+   Node Config Wizard executable.
 
 ## Notes:
 -on linux, you may need to reinstall libxcv-cursor0 if you encounter an erro from xcb

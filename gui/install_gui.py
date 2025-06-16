@@ -284,7 +284,7 @@ class InstallerGUI(QWidget):
             ["moving launch directory", "tar", ["-xf", os.path.join(self.resource_dir, "launch.tar.gz"), "-C", "/home/xmmgr/"]],
             ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/launch"]],
             ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/launch"]],
-            ["Creating NodeConfigWizard Desktop icon", "bash", [os.path.join(self.resource_dir, "createNodeConfigWizardDesktop.sh")]],
+            ["Creating NodeConfigWizard Desktop icon", "sudo", ["bash", os.path.join(self.resource_dir, "createNodeConfigWizardDesktop.sh")]],
 
             # Setting up recordings dir
             ["Creating recordings directory", "mkdir", ["/home/xmmgr/recordings"]],
