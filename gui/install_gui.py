@@ -322,7 +322,10 @@ class InstallerGUI(QWidget):
             if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
                 cmd[2].insert(0, "-S")
 
-        self.launch_parent_dir = os.path.join(os.path.expanduser("~"), "git")
+        # The launch directory should always live inside the xmmgr user's
+        # home directory.  Default to ``/home/xmmgr/launch`` so no dialog is
+        # required to pick the location.
+        self.launch_parent_dir = "/home/xmmgr"
         self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
         self.current_command = ""
         self.initUI()
@@ -611,14 +614,8 @@ class InstallerGUI(QWidget):
 
 
     def request_launch_location(self):
-        default_dir = self.launch_parent_dir
-        selected_dir = QFileDialog.getExistingDirectory(
-            self,
-            "Select Launch Directory Location",
-            default_dir,
-        )
-        if selected_dir:
-            self.launch_parent_dir = selected_dir
+        """Set the launch directory to the xmmgr user's home."""
+        self.launch_parent_dir = "/home/xmmgr"
         self.launch_dir = os.path.join(self.launch_parent_dir, "launch")
         print("launch directory set to", self.launch_dir)
     
