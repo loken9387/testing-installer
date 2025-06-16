@@ -276,11 +276,6 @@ class InstallerGUI(QWidget):
             ["Enabling docker", "sudo", ["systemctl", "enable", "docker"]],
             ["Checking docker status", "sudo", ["systemctl", "status", "docker"]],
 
-            # Setting up usrp
-            ["Setting rmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.rmem_max=24912805"]],
-            ["Setting wmem_max for usrp", "sudo", ["sysctl", "-w", "net.core.wmem_max=24912805"]],
-            ["Loading USRP FPGA", "uhd_image_loader", []],
-
             # Setting up launch dir
             ["Removing existing launch directory", "bash", [
                 "-c",
@@ -502,9 +497,12 @@ class InstallerGUI(QWidget):
             self.update_launch_paths()
         elif command[0] == "Removing existing launch directory":
             self.request_launch_location()
-            # account for sudo -S at the beginning of the arguments
-            index = 3 if command[1] == "sudo" else 2
-            command[2][index] = self.launch_dir
+            # the command string is at index 1 of the argument list
+            index = 1
+            if len(command[2]) > index:
+                command[2][index] = (
+                    f'if [ -d "{self.launch_dir}" ]; then sudo rm -r "{self.launch_dir}"; fi'
+                )
             self.update_launch_paths()
         elif command[0] == "moving launch directory":
             command[2][3] = self.launch_parent_dir + "/"
