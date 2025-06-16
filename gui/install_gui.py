@@ -237,14 +237,14 @@ class InstallerGUI(QWidget):
         self.base_url = "http://localhost:8080/api/missions/import/upload"
         self.ovpn_profile = "profile-"
         self.ovpn_number = 0
-        self.install_method = "offline"
+        self.install_method = "online"
         self.install_commands = []
         self.resource_dir = SCRIPT_DIR
         self.X310_FPGA_PATH = "/scratch/images/usrp_x310_fpga_XG.bit"
         self.B210_FPGA_PATH = "/scratch/images/usrp_b210_fpga.bin"
 
-        # Default offline installation commands
-        self.offline_commands = [
+        # Commands run after packages are installed
+        self.post_install_commands = [
             ["Starting ssh", "sudo", ["systemctl", "start", "ssh"]],
             ["Enabling ssh now", "sudo", ["systemctl", "enable", "ssh", "--now"]],
             ["Enabling ssh", "sudo", ["systemctl", "enable", "ssh"]],
@@ -322,7 +322,7 @@ class InstallerGUI(QWidget):
         ]
 
         # Ensure all sudo commands use the -S flag for password input
-        for cmd in self.offline_commands:
+        for cmd in self.post_install_commands:
             if cmd[1] == "sudo" and (not cmd[2] or cmd[2][0] != "-S"):
                 cmd[2].insert(0, "-S")
 
@@ -387,69 +387,49 @@ class InstallerGUI(QWidget):
 
         self.setLayout(self.layout)
     
-    def offlineSetup(self):
+    def networkSetup(self):
         script_dir = self.resource_dir
-        thumb_drive_path = os.path.join(script_dir, "dependencies")
         self.update_resource_paths(script_dir)
-        print("offlineSetup() function")
+        packages_path = os.path.join(script_dir, "packages.csv")
+        if not os.path.exists(packages_path):
+            raise FileNotFoundError(f"{packages_path} not found")
 
-        # Ensure the thumb drive path exists
-        if not os.path.exists(thumb_drive_path):
-            raise FileNotFoundError(f"The thumb drive path {thumb_drive_path} does not exist.")
-
-        order_file = os.path.join(thumb_drive_path, "package_order.txt")
-        ordered_files = []
-        if os.path.exists(order_file):
-            with open(order_file) as f:
-                for line in f:
-                    name = line.strip()
-                    if name:
-                        ordered_files.append(name)
-            available = [f for f in os.listdir(thumb_drive_path) if f.endswith(".deb")]
-            for f in sorted(available):
-                if f not in ordered_files:
-                    ordered_files.append(f)
-        else:
-            packages_path = os.path.join(script_dir, "packages.csv")
-            package_order = []
-            if os.path.exists(packages_path):
-                with open(packages_path, newline="") as f:
-                    for row in csv.reader(f):
-                        if not row:
-                            continue
-                        pkg = row[0].strip()
-                        if pkg and not pkg.startswith("#"):
-                            package_order.append(pkg)
-
-            available = [f for f in os.listdir(thumb_drive_path) if f.endswith(".deb")]
-            used = set()
-
-            for pkg in package_order:
-                if pkg.endswith(".deb"):
-                    name = os.path.basename(pkg)
-                    if name in available and name not in used:
-                        ordered_files.append(name)
-                        used.add(name)
+        packages = []
+        with open(packages_path, newline="") as f:
+            for row in csv.reader(f):
+                if not row:
                     continue
+                pkg = row[0].strip()
+                if pkg and not pkg.startswith("#"):
+                    packages.append(pkg)
 
-                pattern = f"{pkg}_*.deb"
-                matches = [f for f in available if fnmatch.fnmatch(f, pattern)]
-                if matches:
-                    matches.sort()
-                    chosen = matches[0]
-                    if chosen not in used:
-                        ordered_files.append(chosen)
-                        used.add(chosen)
+        self.install_commands.append([
+            "Updating apt cache", "sudo", ["-S", "apt-get", "update"]
+        ])
 
-            for f in sorted(available):
-                if f not in used:
-                    ordered_files.append(f)
-
-        for deb_file in ordered_files:
-            deb_file_path = os.path.join(thumb_drive_path, deb_file)
-            self.install_commands.append([
-                f"Installing {deb_file}", "sudo", ["-S", "dpkg", "-i", deb_file_path]
-            ])
+        for pkg in packages:
+            if pkg.endswith("google-chrome-stable_current_amd64.deb"):
+                deb_path = os.path.join("/tmp", "google-chrome-stable_current_amd64.deb")
+                self.install_commands.append([
+                    "Downloading Google Chrome", "wget", [
+                        "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb",
+                        "-O",
+                        deb_path,
+                    ],
+                ])
+                self.install_commands.append([
+                    "Installing google-chrome", "sudo", ["-S", "dpkg", "-i", deb_path]
+                ])
+                self.install_commands.append([
+                    "Fixing dependencies", "sudo", ["-S", "apt-get", "-f", "install", "-y"]
+                ])
+                self.install_commands.append([
+                    "Removing chrome deb", "rm", [deb_path]
+                ])
+            else:
+                self.install_commands.append([
+                    f"Installing {pkg}", "sudo", ["-S", "apt-get", "install", "-y", pkg]
+                ])
 
         
         serverCommand = -1
@@ -499,8 +479,8 @@ class InstallerGUI(QWidget):
         # self.request_docker()
         # self.updateMessage("Enter Bitbucket Credentials")
         # self.request_bitbucket()
-        self.offlineSetup()
-        self.install_commands.extend(self.offline_commands)
+        self.networkSetup()
+        self.install_commands.extend(self.post_install_commands)
         self.total_commands = len(self.install_commands)
         self.request_sudo()
         for i in self.install_commands:
@@ -722,7 +702,7 @@ class InstallerGUI(QWidget):
             os.path.join(SCRIPT_DIR, "OpenVPN/"): os.path.join(script_dir, "OpenVPN/"),
         }
 
-        for cmd in self.offline_commands:
+        for cmd in self.post_install_commands:
             cmd[2] = [replacements.get(arg, arg) for arg in cmd[2]]
 
     def verify_resource_directory(self, script_dir):
