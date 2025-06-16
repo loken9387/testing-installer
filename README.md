@@ -55,5 +55,8 @@ an internet connection is required.
 3. Execute the installer and follow the prompts. The script will download and
    install each package before loading the Docker images and extracting
    `launch.tar`.
-4. After installation completes the system will automatically shut down so you
+4. If the USRP FPGA images are missing, the installer automatically runs
+   `uhd_images_downloader.py` and copies the correct bitfile for the device you
+   select.
+5. After installation completes the system will automatically shut down so you
    can power cycle the machine.

@@ -4,6 +4,7 @@ import subprocess
 import getpass
 import csv
 import fnmatch
+import shutil
 
 if getattr(sys, "frozen", False):
     SCRIPT_DIR = os.path.dirname(sys.executable)
@@ -515,6 +516,7 @@ class InstallerGUI(QWidget):
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 device = dialog.device_combo.currentText()
                 addr = dialog.conn_edit.text().strip()
+                self.ensure_fpga_image(device)
                 if device == "x310":
                     command[2] = [f"--args=type=x300,addr={addr}", f"--fpga-path={self.X310_FPGA_PATH}"]
                 else:
@@ -728,6 +730,43 @@ class InstallerGUI(QWidget):
                 if selected_dir:
                     script_dir = selected_dir
         return script_dir
+
+    def ensure_fpga_image(self, device: str) -> None:
+        """Download the FPGA image for *device* if it is missing."""
+        if device == "x310":
+            target = self.X310_FPGA_PATH
+            dtype = "x3xx"
+            fname = "usrp_x310_fpga_XG.bit"
+        else:
+            target = self.B210_FPGA_PATH
+            dtype = "b2xx"
+            fname = "usrp_b210_fpga.bin"
+
+        if os.path.exists(target):
+            return
+
+        self.logsText.append(f"Downloading {device} FPGA image...")
+        try:
+            subprocess.run(
+                ["sudo", "-S", "uhd_images_downloader.py", "-t", dtype],
+                check=False,
+                text=True,
+                input=f"{self.sudo_password}\n",
+            )
+        except FileNotFoundError:
+            self.logsText.append("uhd_images_downloader.py not found")
+            return
+
+        search_dirs = ["/usr/local/share/uhd/images", "/usr/share/uhd/images"]
+        for d in search_dirs:
+            src = os.path.join(d, fname)
+            if os.path.exists(src):
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                try:
+                    shutil.copy(src, target)
+                except Exception as exc:
+                    self.logsText.append(str(exc))
+                break
 
     def read_output(self):
         output = self.process.readAllStandardOutput().data().decode()
