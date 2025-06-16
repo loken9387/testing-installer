@@ -19,8 +19,10 @@ def read_packages(csv_path: Path) -> list[str]:
 
 
 def download_package(package: str, dest: Path) -> List[str]:
-    """Download *package* and return the list of newly created .deb files."""
-    before = {p.name for p in dest.glob('*.deb')}
+    """Download *package* and return the list of newly created .deb files in
+    the order they were retrieved."""
+    before = {p.name: p.stat().st_mtime for p in dest.glob('*.deb')}
+
 
     if package.startswith('./google-chrome-stable_current_amd64.deb'):
         url = 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb'
@@ -42,8 +44,11 @@ def download_package(package: str, dest: Path) -> List[str]:
             check=True,
         )
 
-    after = {p.name for p in dest.glob('*.deb')}
-    return sorted(after - before)
+    after = {p.name: p.stat().st_mtime for p in dest.glob('*.deb')}
+    new = [(name, after[name]) for name in after.keys() - before.keys()]
+    new.sort(key=lambda t: t[1])
+    return [name for name, _ in new]
+
 
 
 def create_tarball(src_dir: Path, tar_path: Path):
@@ -61,18 +66,20 @@ def main():
     download_dir.mkdir(parents=True, exist_ok=True)
 
     packages = read_packages(packages_file)
+    seen = {}
+    for package in packages:
+        try:
+            new_files = download_package(package, download_dir)
+            for fname in new_files:
+                seen[fname] = (download_dir / fname).stat().st_mtime
+        except subprocess.CalledProcessError as exc:
+            print(f"Failed to download {package}: {exc}")
+
+
     order_path = download_dir / 'package_order.txt'
-    seen = set()
     with order_path.open('w') as order_file:
-        for package in packages:
-            try:
-                new_files = download_package(package, download_dir)
-                for fname in new_files:
-                    if fname not in seen:
-                        seen.add(fname)
-                        order_file.write(fname + '\n')
-            except subprocess.CalledProcessError as exc:
-                print(f"Failed to download {package}: {exc}")
+        for name, _ in sorted(seen.items(), key=lambda item: item[1]):
+            order_file.write(name + '\n')
 
     if args.tar:
         tar_path = script_dir / 'debFiles.tar.gz'

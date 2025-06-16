@@ -450,6 +450,7 @@ class InstallerGUI(QWidget):
             self.install_commands.append([
                 f"Installing {deb_file}", "sudo", ["-S", "dpkg", "-i", deb_file_path]
             ])
+
         
         serverCommand = -1
         sftpCommand = -1
