@@ -1,6 +1,7 @@
 #!/bin/bash
 
-[ -n "$NODE_WIZARD_USER" ] && HOME="/home/$NODE_WIZARD_USER"
+NODE_WIZARD_USER="${NODE_WIZARD_USER:-xmmgr}"
+HOME="/home/$NODE_WIZARD_USER"
 
 node_config_wizard="$HOME/launch/nodeConfigWizard"
 desktop_file="/usr/share/applications/nodeConfigWizard.desktop"
