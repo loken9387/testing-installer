@@ -281,7 +281,7 @@ class InstallerGUI(QWidget):
                 "-c",
                 'if [ -d "/home/xmmgr/launch" ]; then sudo rm -r "/home/xmmgr/launch"; fi'
             ]],
-            ["moving launch directory", "tar", ["-xf", os.path.join(self.resource_dir, "launch.tar.gz"), "-C", "/home/xmmgr/"]],
+            ["moving launch directory", "sudo", ["tar", "-xf", os.path.join(self.resource_dir, "launch.tar.gz"), "-C", "/home/xmmgr/"]],
             ["Changing group of launch directory to xmmgr", "sudo", ["chgrp", "-R", "xmmgr", "/home/xmmgr/launch"]],
             ["Changing owner of launch directory to xmmgr", "sudo", ["chown", "-R", "xmmgr", "/home/xmmgr/launch"]],
             ["Creating NodeConfigWizard Desktop icon", "sudo", ["bash", os.path.join(self.resource_dir, "createNodeConfigWizardDesktop.sh")]],
@@ -505,7 +505,13 @@ class InstallerGUI(QWidget):
                 )
             self.update_launch_paths()
         elif command[0] == "moving launch directory":
-            command[2][3] = self.launch_parent_dir + "/"
+            if "-C" in command[2]:
+                index = command[2].index("-C") + 1
+            else:
+                # Fallback to original index when -C is expected
+                index = 3
+            if len(command[2]) > index:
+                command[2][index] = self.launch_parent_dir + "/"
         elif command[0] == "Moving launch to git directory":
             index = 3 if command[1] == "sudo" else 2
             command[2][index] = self.launch_parent_dir + "/"
